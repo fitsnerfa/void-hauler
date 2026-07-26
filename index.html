@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VOID HAULER v1.1 — Mining &amp; Commerce</title>
+<title>VOID HAULER v1.4.1 — Quest Journal</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -98,11 +98,20 @@
   #station-overlay{position:absolute;inset:0;background:rgba(3,5,9,.86);z-index:10;
     display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
   #station-overlay.open{display:flex;}
-  #station-panel{width:min(760px,92vw);max-height:88vh;overflow-y:auto;
+  #station-panel{width:min(760px,92vw);max-height:88vh;overflow:hidden;position:relative;
+    display:flex;flex-direction:column;
     background:linear-gradient(180deg,#0d1522,#080d16);border:1px solid var(--panel-edge);
     border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(79,224,208,.06) inset;}
-  #station-panel::-webkit-scrollbar{width:8px;}
-  #station-panel::-webkit-scrollbar-thumb{background:var(--panel-edge);border-radius:4px;}
+  #station-scroll{overflow-y:auto;min-height:0;scroll-behavior:smooth;}
+  #station-scroll::-webkit-scrollbar{width:8px;}
+  #station-scroll::-webkit-scrollbar-thumb{background:var(--panel-edge);border-radius:4px;}
+  #station-panel>.station-head{flex:0 0 auto;background:#0d1522;z-index:3;}
+  #station-panel .tabs{position:sticky;top:0;z-index:2;background:#0b121e;}
+  #station-panel .close-btn{width:40px;height:40px;font-size:20px;font-weight:700;}
+  #station-top-btn{position:absolute;right:18px;bottom:18px;z-index:4;cursor:pointer;pointer-events:auto;
+    padding:8px 11px;border:1px solid var(--panel-edge);border-radius:3px;background:rgba(8,13,22,.94);
+    color:var(--cyan);font:11px 'JetBrains Mono',monospace;letter-spacing:.04em;box-shadow:0 4px 14px rgba(0,0,0,.4);}
+  #station-top-btn:hover{border-color:var(--cyan);background:var(--cyan-dim);}
   #outpost-overlay{position:absolute;inset:0;background:rgba(3,5,9,.86);z-index:10;
     display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
   #outpost-overlay.open{display:flex;}
@@ -115,6 +124,19 @@
   #manifest-overlay{position:absolute;inset:0;background:rgba(3,5,9,.75);z-index:11;
     display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
   #manifest-overlay.open{display:flex;}
+  #quest-overlay{position:absolute;inset:0;background:rgba(3,5,9,.82);z-index:12;display:none;align-items:center;justify-content:center;padding:18px;}
+  #quest-overlay.open{display:flex;}
+  #quest-panel{width:min(760px,94vw);max-height:88vh;border:1px solid var(--cyan);background:#090e17;box-shadow:0 0 40px rgba(79,224,208,.18);display:flex;flex-direction:column;}
+  #quest-list{padding:18px 24px 24px;overflow:auto;}
+  .quest-card{border:1px solid var(--panel-edge);background:#0b1220;padding:14px 16px;margin-bottom:10px;}
+  .quest-card.complete{border-color:#2b7a69;background:#091713;}
+  .quest-card.locked{opacity:.72;}
+  .quest-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;}
+  .quest-state{font:10px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);}
+  .quest-card.complete .quest-state{color:var(--cyan);}
+  .quest-desc{font-size:11px;color:var(--text-dim);line-height:1.55;margin:7px 0 10px;}
+  .quest-step{font-size:12px;color:var(--text-dim);margin:5px 0;}
+  .quest-step.done{color:var(--cyan);}
   #manifest-panel{width:min(480px,92vw);max-height:80vh;overflow-y:auto;
     background:linear-gradient(180deg,#0d1522,#080d16);border:1px solid var(--panel-edge);
     border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(79,224,208,.06) inset;}
@@ -181,6 +203,32 @@
     font-family:'Chakra Petch',sans-serif;}
   #start-btn:hover{background:var(--cyan);color:#031012;}
   #reset-link{margin-top:16px;font-size:11px;color:var(--text-dim);cursor:pointer;text-decoration:underline;}
+
+  .armory-wrap{border:1px solid var(--panel-edge);border-radius:4px;padding:12px;margin-top:16px;background:rgba(5,10,18,.58)}
+  .armory-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 12px}
+  .armory-toolbar button{background:#101827;border:1px solid var(--panel-edge);color:var(--text);padding:7px 10px;border-radius:3px;cursor:pointer;font:11px 'JetBrains Mono',monospace}
+  .armory-toolbar button:hover{border-color:var(--cyan);color:var(--cyan)}
+  .crew-loadout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:10px}
+  .loadout-card{border:1px solid var(--panel-edge);border-radius:4px;padding:10px;background:#080d16}
+  .loadout-name{font-weight:700;font-size:12px;margin-bottom:2px}.loadout-hp{font-size:10px;color:var(--cyan);margin-bottom:8px}
+  .equip-row{display:grid;grid-template-columns:58px 1fr;gap:6px;align-items:center;margin:5px 0}.equip-label{font-size:9px;color:var(--text-dim);text-transform:uppercase}
+  .equip-slot,.armory-slot{min-height:39px;border:1px dashed #334155;border-radius:3px;padding:6px;background:#050911;display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .equip-slot.dragover,.armory-slot.dragover{border-color:var(--cyan);box-shadow:0 0 10px rgba(79,224,208,.2)}
+  .gear-chip{width:100%;cursor:grab}.gear-name{font-size:10px;color:var(--text)}.gear-meta{font-size:9px;color:var(--amber);margin-top:2px}
+  .armory-grid{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:7px}.armory-slot{min-height:52px}.armory-empty{font-size:9px;color:#526077;text-align:center;width:100%}
+  .gear-actions{display:flex;gap:4px}.tiny-btn{border:1px solid #39465a;background:#101827;color:var(--text-dim);font-size:9px;padding:3px 5px;cursor:pointer;border-radius:2px}.tiny-btn:hover{color:var(--cyan);border-color:var(--cyan)}
+  @media(max-width:700px){.armory-grid{grid-template-columns:repeat(2,1fr)}}
+  #hideout-overlay{position:absolute;inset:0;background:rgba(2,3,7,.96);z-index:30;display:none;align-items:center;justify-content:center;padding:18px;}
+  #hideout-overlay.open{display:flex;}
+  #hideout-panel{width:min(920px,96vw);height:min(720px,94vh);border:1px solid #a855f7;background:#090b12;box-shadow:0 0 50px rgba(168,85,247,.25);display:flex;flex-direction:column;}
+  #hideout-body{display:grid;grid-template-columns:1fr 280px;gap:18px;padding:18px;overflow:auto;}
+  #dungeon-grid{display:grid;grid-template-columns:repeat(9,42px);grid-auto-rows:42px;gap:3px;justify-content:center;padding:12px;background:#05070b;border:1px solid var(--panel-edge);}
+  .dcell{display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.04);font:18px 'JetBrains Mono',monospace;background:#10131b;color:#657080;}
+  .dcell.wall{background:#18131d;color:#3b3042}.dcell.floor{background:#0b1115}.dcell.player{color:var(--cyan);box-shadow:inset 0 0 12px rgba(79,224,208,.3)}
+  .dcell.enemy{color:#ff6a3d}.dcell.loot{color:var(--amber)}.dcell.exit{color:#a855f7}.dcell.boss{color:#ff4d6a;font-weight:bold}
+  .dpad{display:grid;grid-template-columns:repeat(3,54px);gap:6px;justify-content:center;margin:14px 0}.dpad button{height:42px;background:#111722;color:var(--cyan);border:1px solid var(--cyan);cursor:pointer}.dpad .blank{visibility:hidden}
+  #hideout-log{height:150px;overflow:auto;border:1px solid var(--panel-edge);padding:9px;font:11px 'JetBrains Mono',monospace;color:var(--text-dim);background:#05070b;}
+  @media(max-width:760px){#hideout-body{grid-template-columns:1fr}#dungeon-grid{grid-template-columns:repeat(9,30px);grid-auto-rows:30px}.dcell{font-size:13px}}
 </style>
 </head>
 <body>
@@ -231,8 +279,8 @@
   <div id="hud-bottom-left" class="hud panel">
     <div class="controls-hint">
       <b>W/↑</b> thrust &nbsp; <b>A/D</b> turn &nbsp; <b>SPACE</b> fire laser<br>
-      <b>E</b> dock at station &nbsp; <b>I</b> cargo manifest &nbsp; <b>ESC</b> close menu<br>
-      <span id="tractor-hint" style="display:none;"><b>SHIFT/CTRL</b> <span id="tractor-hint-txt">tractor beam</span></span>
+      <b>E</b> dock / investigate signal &nbsp; <b>I</b> cargo &nbsp; <b>J</b> quests &nbsp; <b>ESC</b> close menu<br>
+      <span id="tractor-hint" style="display:none;"><b>SHIFT</b> <span id="tractor-hint-txt">tractor beam</span></span>
       <span id="missile-hint" style="display:none;"><br><b>Z</b> fire missile <span id="missile-ammo-txt" class="mono">(0)</span></span>
     </div>
   </div>
@@ -257,16 +305,19 @@
           <button class="close-btn" onclick="closeStation()">✕</button>
         </div>
       </div>
-      <div class="tabs">
-        <div class="tab active" data-tab="sell" onclick="switchTab('sell')">Sell Cargo</div>
-        <div class="tab" data-tab="upgrades" onclick="switchTab('upgrades')">Ship Upgrades</div>
-        <div class="tab" data-tab="crew" onclick="switchTab('crew')">Crew Quarters</div>
-        <div class="tab" data-tab="faction" onclick="switchTab('faction')">Faction</div>
+      <div id="station-scroll">
+        <div class="tabs">
+          <div class="tab active" data-tab="sell" onclick="switchTab('sell')">Sell Cargo</div>
+          <div class="tab" data-tab="upgrades" onclick="switchTab('upgrades')">Ship Upgrades</div>
+          <div class="tab" data-tab="crew" onclick="switchTab('crew')">Crew Quarters</div>
+          <div class="tab" data-tab="faction" onclick="switchTab('faction')">Faction</div>
+        </div>
+        <div class="tab-content active" id="tab-sell"></div>
+        <div class="tab-content" id="tab-upgrades"></div>
+        <div class="tab-content" id="tab-crew"></div>
+        <div class="tab-content" id="tab-faction"></div>
       </div>
-      <div class="tab-content active" id="tab-sell"></div>
-      <div class="tab-content" id="tab-upgrades"></div>
-      <div class="tab-content" id="tab-crew"></div>
-      <div class="tab-content" id="tab-faction"></div>
+      <button id="station-top-btn" onclick="document.getElementById('station-scroll').scrollTo({top:0,behavior:'smooth'})">▲ TOP</button>
     </div>
   </div>
 
@@ -275,7 +326,7 @@
       <div class="station-head">
         <div>
           <h1 style="color:var(--amber);">Black Market Relay</h1>
-          <div class="sub">Docked · unlicensed fence, deep zone</div>
+          <div class="sub" id="outpost-subtitle">Docked · unlicensed fence</div>
         </div>
         <div style="display:flex;align-items:center;gap:16px;">
           <div class="credits" style="font-size:18px;"><span class="sym">CR</span><span id="outpost-credits-txt">0</span></div>
@@ -306,10 +357,41 @@
     </div>
   </div>
 
+
+  <div id="quest-overlay">
+    <div id="quest-panel">
+      <div class="station-head">
+        <div>
+          <h1>Quest Journal</h1>
+          <div class="sub">Completed, active, and available objectives</div>
+        </div>
+        <button class="close-btn" onclick="closeQuestJournal()">✕</button>
+      </div>
+      <div id="quest-list"></div>
+    </div>
+  </div>
+
+  <div id="hideout-overlay">
+    <div id="hideout-panel">
+      <div class="station-head">
+        <div><h1 style="color:#d9b8ff;">Pirate Hideout · Planetfall</h1><div class="sub">Dungeon crawler deployment · key authenticated</div></div>
+        <button class="close-btn" onclick="closeHideout()">✕</button>
+      </div>
+      <div id="hideout-body">
+        <div><div id="dungeon-grid"></div><div class="dpad"><span class="blank"></span><button onclick="moveDungeon(0,-1)">▲</button><span class="blank"></span><button onclick="moveDungeon(-1,0)">◀</button><button onclick="dungeonAttack()">⚔</button><button onclick="moveDungeon(1,0)">▶</button><span class="blank"></span><button onclick="moveDungeon(0,1)">▼</button><span class="blank"></span></div></div>
+        <div>
+          <div class="upgrade-card" style="display:block;border-color:#a855f7"><div class="u-name">Raider Status</div><div id="dungeon-stats" class="u-desc" style="margin-top:8px;line-height:1.8"></div></div>
+          <div class="label-row" style="margin:12px 0 6px">Mission Log</div><div id="hideout-log"></div>
+          <button class="sell-btn" onclick="leaveDungeon()">Return to Ship</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="start-screen">
     <h1>VOID HAULER</h1>
-    <div style="color:var(--text-dim);font-size:11px;letter-spacing:.15em;margin:-4px 0 18px;font-family:'JetBrains Mono',monospace;">v1.1</div>
-    <p>Every asteroid starts out as plain gray rock — composition unknown. Blast one down through its fragments and you won't know what you're actually hauling until the smallest pieces crack open, so a single big rock might hide a mix of common ore and something far more valuable. Scoop up what spills out and haul it back to Ceres Anchorage to sell. Watch out for pirates hunting your cargo hold — fight them off or outrun them. Reinvest in your ship, hire crew, and build a mining operation from a single beat-up hauler.</p>
+    <div style="color:var(--text-dim);font-size:11px;letter-spacing:.15em;margin:-4px 0 18px;font-family:'JetBrains Mono',monospace;">v1.4.1</div>
+    <p>Every asteroid starts out as plain gray rock — composition unknown. Distress beacons and wreck signals may also appear while you travel: investigate them for rescues and salvage, but beware of pirate traps. Blast one down through its fragments and you won't know what you're actually hauling until the smallest pieces crack open, so a single big rock might hide a mix of common ore and something far more valuable. Scoop up what spills out and haul it back to Ceres Anchorage to sell. Watch out for pirates hunting your cargo hold — fight them off or outrun them. Reinvest in your ship, hire crew, and build a mining operation from a single beat-up hauler.</p>
     <button id="start-btn" onclick="startGame()">Launch</button>
     <div id="reset-link" onclick="resetSave()">reset save data</div>
   </div>
@@ -320,6 +402,24 @@
 const WORLD = 5000;
 const STATION = {x: 2500, y: 2500, dockRadius: 170};
 const STORAGE_KEY = 'ore:save';
+const NAMED_PIRATES = [
+  {id:'rust_fang',name:'Rust Fang',piece:'Fang Shard',zone:'normal'},
+  {id:'black_tide',name:'Black Tide',piece:'Tide Cipher',zone:'deep'},
+  {id:'widowmaker',name:'Widowmaker',piece:'Widow Sigil',zone:'nebula'},
+  {id:'crimson_jackal',name:'Crimson Jackal',piece:'Jackal Tooth',zone:'deep'},
+  {id:'ghost_vega',name:'Ghost of Vega',piece:'Vega Prism',zone:'nebula'}
+];
+const HIDEOUT_SCRAP_COST = 1000;
+const CIV_REP_TIERS = [
+  {name:'Unknown',min:0,sell:1}, {name:'Friendly',min:3,sell:1.03},
+  {name:'Trusted',min:10,sell:1.07}, {name:'Hero',min:25,sell:1.12}, {name:'Legend',min:60,sell:1.18}
+];
+const MARKET_EVENTS = [
+  {name:'Stable Market',mods:{}}, {name:'Water Shortage',mods:{water:2.0,hydrogen:1.25,oxygen:1.25}},
+  {name:'Ore Glut',mods:{iron:.7,copper:.75,silver:.82}}, {name:'Reactor Boom',mods:{platinum:1.55,crystal:1.45}},
+  {name:'Pirate Raids',mods:{scrap_metal:1.6,gold:1.2}}, {name:'Nebula Harvest',mods:{hydrogen:.72,oxygen:.72,helium:.78}}
+];
+
 
 const MATERIALS = {
   iron:      {name:'Iron Ore',       color:'#9199a6', price:5,     weight:38, symbol:'Fe', cargoWeight:1},
@@ -339,19 +439,22 @@ const MATERIALS = {
   ingot_gold:    {name:'Gold Ingot',     color:'#ffdd8a', price:858,  weight:0, symbol:'Au', cargoWeight:1, ingot:true, refines:'gold'},
   ingot_platinum:{name:'Platinum Ingot', color:'#b3e2fa', price:1705, weight:0, symbol:'Pt', cargoWeight:1, ingot:true, refines:'platinum'},
   // gases — collected from gas clouds in the Nebula zone via Ram Scoop, never found on asteroids
-  hydrogen: {name:'Hydrogen Gas', color:'#7ec8e3', price:4,   weight:0, symbol:'H',   cargoWeight:1, gas:true},
+  hydrogen: {name:'Hydrogen Gas', color:'#7ec8e3', price:4,   weight:0, symbol:'H₂',  cargoWeight:1, gas:true},
+  oxygen:   {name:'Oxygen Gas',   color:'#b8e8ff', price:7,   weight:0, symbol:'O₂',  cargoWeight:1, gas:true},
   helium:   {name:'Helium Gas',   color:'#ffe9a8', price:9,   weight:0, symbol:'He',  cargoWeight:1, gas:true},
   nitrogen: {name:'Nitrogen Gas', color:'#9bdcff', price:22,  weight:0, symbol:'N',   cargoWeight:1, gas:true},
   methane:  {name:'Methane Gas',  color:'#8fe3a0', price:45,  weight:0, symbol:'CH4', cargoWeight:1, gas:true},
   neon:     {name:'Neon Gas',     color:'#ff8fd1', price:180, weight:0, symbol:'Ne',  cargoWeight:1, gas:true},
   xenon:    {name:'Xenon Gas',    color:'#c9a6ff', price:500, weight:0, symbol:'Xe',  cargoWeight:1, gas:true},
+  // crafted supplies — produced in the Cargo Manifest, never found naturally
+  water:    {name:'Water',         color:'#5fc9ff', price:55,  weight:0, symbol:'H₂O', cargoWeight:1, crafted:true},
   // salvage — dropped by destroyed Corvettes, not found on asteroids; use TBD
   scrap_metal: {name:'Scrap Metal', color:'#9199a6', price:90, weight:0, symbol:'Sc', cargoWeight:1, salvage:true},
 };
 const MAT_KEYS = Object.keys(MATERIALS);
-const MINEABLE_KEYS = MAT_KEYS.filter(k=>k!=='darkmatter' && !MATERIALS[k].ingot && !MATERIALS[k].gas && !MATERIALS[k].salvage); // dark matter, ingots, gases, and salvage never roll through the asteroid pool
+const MINEABLE_KEYS = MAT_KEYS.filter(k=>k!=='darkmatter' && !MATERIALS[k].ingot && !MATERIALS[k].gas && !MATERIALS[k].crafted && !MATERIALS[k].salvage); // dark matter, ingots, gases, and salvage never roll through the asteroid pool
 const GAS_KEYS = MAT_KEYS.filter(k=>MATERIALS[k].gas);
-const GAS_TOTAL_WEIGHT_MAP = {hydrogen:38, helium:27, nitrogen:16, methane:10, neon:6, xenon:3};
+const GAS_TOTAL_WEIGHT_MAP = {hydrogen:34, oxygen:22, helium:24, nitrogen:16, methane:10, neon:6, xenon:3};
 const GAS_TOTAL_WEIGHT = GAS_KEYS.reduce((s,k)=>s+(GAS_TOTAL_WEIGHT_MAP[k]||1),0);
 function pickGas(){
   let r = Math.random()*GAS_TOTAL_WEIGHT;
@@ -380,6 +483,9 @@ const SMELTER_UNLOCK_LEVEL = 6;
 const SMELTER_COST = 3200;
 const SMELT_RATIO = 10; // raw ore units consumed per ingot produced
 const SMELTABLE_KEYS = ['iron','copper','silver','gold','platinum'];
+const WATER_HYDROGEN_COST = 20;
+const WATER_OXYGEN_COST = 10;
+const WATER_OUTPUT = 5;
 
 const PIRATE_HP_BASE = 38;
 const PIRATE_SPEED = 130;
@@ -458,8 +564,12 @@ let player = {
   nebulaQuestAccepted: false,
   gasTankLevel: 0,
   gasBuffer: {},
+  civilianRep: 0, namedPirateKills: {}, keyPieces: {}, hideoutUnlocked: false, hideoutCleared: false,
+  marketEventIndex: 0, marketCycle: 0, dungeonRuns: 0, dungeonBestFloor: 0,
+  gems: 0, pirateTechPieces: 0, upgradePoints: 0,
 };
-let crew = []; // {id,name,role,level,xp}
+let crew = []; // {id,name,role,level,xp,equipment:{armor,melee,ranged,special}}
+let armory = []; // ten unequipped items maximum
 let asteroids = [];
 let pirates = [];
 let escort = null; // friendly faction ship, unlocked via Escort Contract perk
@@ -487,7 +597,11 @@ const STARGATE_POS = {x: WORLD-400, y: 400};
 const OUTPOST_POS = {x: WORLD-1800, y: 1300};
 const OUTPOST_DOCK_RADIUS = 170;
 const OUTPOST_SELL_MULT = 0.8;      // black market fence prices — worse than the real station
-const OUTPOST_MISSILE_COST = 220;   // ship missiles — the fence is now the only place to buy them
+const OUTPOST_MISSILE_COST = 220;   // five ship missiles
+const OUTPOST_MISSILE_SELL_PRICE = 22; // per missile — the fence buys low
+const OUTPOST_DMM_SELL_PRICE = 1100;
+const DMM_TRADE_MISSILES = 10;
+const DMM_TRADE_CREDITS = 1500;
 const FRIGATE_HP = PIRATE_HP_BASE * 2;      // "2x hit points"
 const FRIGATE_SHIELD = 80;                  // roughly double a base deflector shield
 const FRIGATE_DPS = PIRATE_DPS * 1.6;
@@ -499,6 +613,166 @@ const CORVETTE_BOUNTY_MULT = 5;
 const CORVETTE_TARGET_COUNT = 4;
 const CORVETTE_SCALE = 2.2; // visual/collision size multiplier vs a base pirate
 const SCRAP_DROP_MIN = 2, SCRAP_DROP_MAX = 5;
+
+
+/* ============================= DISTRESS / SALVAGE ENCOUNTERS ============================= */
+const DISTRESS_MIN_DELAY = 55;       // seconds between opportunities
+const DISTRESS_MAX_DELAY = 105;
+const DISTRESS_LIFETIME = 95;        // unresolved signals eventually fade
+const DISTRESS_INTERACT_RADIUS = 115;
+const DISTRESS_SAFE_RADIUS = 700;    // do not spawn directly beside the player
+const DISTRESS_MAX_RADIUS = 1250;
+const DISTRESS_RESCUE_REWARD_MIN = 180;
+const DISTRESS_RESCUE_REWARD_MAX = 420;
+const DISTRESS_FACTION_REWARD = 12;
+const DISTRESS_AMBUSH_COUNT_MIN = 2;
+const DISTRESS_AMBUSH_COUNT_MAX = 4;
+const SALVAGE_CACHE_LIFETIME = 120;
+const SALVAGE_CACHE_RADIUS = 34;
+
+let distressSignal = null;           // one active unknown signal at a time
+let distressTimer = 35 + Math.random()*25;
+let distressDockable = false;
+let salvageCaches = [];
+
+function randomDistressDelay(){
+  return DISTRESS_MIN_DELAY + Math.random()*(DISTRESS_MAX_DELAY-DISTRESS_MIN_DELAY);
+}
+function distressZoneAllowed(){
+  return zone === 'normal' || zone === 'deep';
+}
+function spawnDistressSignal(){
+  if(distressSignal || !distressZoneAllowed() || docked || manifestOpen) return;
+  let x,y,guard=0;
+  do{
+    const ang = Math.random()*Math.PI*2;
+    const dist = DISTRESS_SAFE_RADIUS + Math.random()*(DISTRESS_MAX_RADIUS-DISTRESS_SAFE_RADIUS);
+    x = Math.max(120, Math.min(WORLD-120, player.x + Math.cos(ang)*dist));
+    y = Math.max(120, Math.min(WORLD-120, player.y + Math.sin(ang)*dist));
+    guard++;
+  } while(guard<20 && ((zone==='normal' && Math.hypot(x-STATION.x,y-STATION.y)<450) ||
+           (zone==='deep' && Math.hypot(x-OUTPOST_POS.x,y-OUTPOST_POS.y)<450)));
+  distressSignal = {x,y,age:0,pulse:Math.random()*Math.PI*2};
+  toast('Unknown distress signal detected — marked on radar.', 'warn');
+  tone(520,0.16,{type:'square',vol:0.08});
+  setTimeout(()=>tone(760,0.18,{type:'square',vol:0.07}),130);
+}
+function spawnSalvageCache(x,y,label,loot){
+  salvageCaches.push({x,y,label,loot,age:0,pulse:Math.random()*Math.PI*2});
+}
+function buildWreckLoot(quality){
+  const loot = {credits:0, cargo:{}, missiles:0, dmm:0};
+  if(quality==='military'){
+    loot.credits = 220 + Math.floor(Math.random()*360);
+    loot.cargo.scrap_metal = 3 + Math.floor(Math.random()*5);
+    if(Math.random()<0.75) loot.missiles = 1 + Math.floor(Math.random()*4);
+    if(Math.random()<0.12) loot.dmm = 1;
+  } else {
+    loot.credits = 80 + Math.floor(Math.random()*190);
+    loot.cargo.scrap_metal = 2 + Math.floor(Math.random()*4);
+    const bonusPool = ['iron','copper','silver','gold','hydrogen','helium'];
+    const mat = bonusPool[Math.floor(Math.random()*bonusPool.length)];
+    loot.cargo[mat] = 1 + Math.floor(Math.random()*4);
+  }
+  return loot;
+}
+function resolveDistressSignal(){
+  if(!distressSignal || !distressDockable) return;
+  const sig = distressSignal;
+  distressSignal = null;
+  distressDockable = false;
+  distressTimer = randomDistressDelay();
+  const roll = Math.random();
+  if(roll < 0.34){
+    const reward = DISTRESS_RESCUE_REWARD_MIN + Math.floor(Math.random()*(DISTRESS_RESCUE_REWARD_MAX-DISTRESS_RESCUE_REWARD_MIN+1));
+    player.credits += reward;
+    player.factionPoints += DISTRESS_FACTION_REWARD;
+    player.factionPointsTotal += DISTRESS_FACTION_REWARD;
+    player.civilianRep = (player.civilianRep||0) + 1;
+    grantXp(reward*0.10);
+    toast(`Civilian crew rescued! +${reward} cr · +${DISTRESS_FACTION_REWARD} FP · Civilian rep ${civilianTier().name}`, 'levelup');
+    sfxLevelUp();
+    checkQuestCompletion();
+  } else if(roll < 0.61){
+    const count = DISTRESS_AMBUSH_COUNT_MIN + Math.floor(Math.random()*(DISTRESS_AMBUSH_COUNT_MAX-DISTRESS_AMBUSH_COUNT_MIN+1));
+    for(let i=0;i<count;i++){
+      const ang = (i/count)*Math.PI*2 + Math.random()*0.45;
+      const dist = 190 + Math.random()*90;
+      if(zone==='deep' && Math.random()<0.45) spawnFrigate(sig.x+Math.cos(ang)*dist, sig.y+Math.sin(ang)*dist);
+      else spawnPirate(sig.x+Math.cos(ang)*dist, sig.y+Math.sin(ang)*dist);
+    }
+    toast(`The distress call was a trap — ${count} pirate ships incoming!`, 'warn');
+    sfxLowEnergy();
+  } else if(roll < 0.88){
+    const military = zone==='deep' && Math.random()<0.45;
+    spawnSalvageCache(sig.x,sig.y,military?'Military Wreck':'Derelict Freighter',buildWreckLoot(military?'military':'civilian'));
+    toast(`${military?'Military wreck':'Derelict freighter'} located — fly over the cache to salvage it.`);
+  } else {
+    const reward = 120 + Math.floor(Math.random()*180);
+    player.credits += reward;
+    player.hull = Math.min(hullMax(), player.hull + 18);
+    grantXp(30);
+    toast(`Escape pod recovered. Survivor paid ${reward} cr and patched 18 hull.`, 'levelup');
+    sfxDock();
+  }
+  saveGame();
+}
+function collectSalvageCache(cache){
+  let credits = cache.loot.credits || 0;
+  let collected = [], leftBehind = [];
+  if(credits>0){ player.credits += credits; collected.push(`${credits} cr`); }
+  for(const [mat,qty] of Object.entries(cache.loot.cargo||{})){
+    let added = 0;
+    const weight = (MATERIALS[mat]&&MATERIALS[mat].cargoWeight)||1;
+    for(let i=0;i<qty;i++){
+      const isGas = MATERIALS[mat] && MATERIALS[mat].gas;
+      const fits = isGas ? (player.hasRamScoop && gasUsed()+weight<=gasTankCapacity()) : (cargoUsed()+weight<=cargoCapacity());
+      if(!fits) break;
+      player.cargo[mat] = (player.cargo[mat]||0)+1;
+      added++;
+    }
+    if(added) collected.push(`${added} ${MATERIALS[mat].name}`);
+    if(added<qty) leftBehind.push(`${qty-added} ${MATERIALS[mat].name}`);
+  }
+  let missilesAdded=0;
+  if(player.hasMissileLauncher){
+    for(let i=0;i<(cache.loot.missiles||0);i++) if(canAddShipMissiles(1)){ player.missileAmmo++; missilesAdded++; }
+    if((cache.loot.dmm||0)>0 && canAddDMM(1)){ player.dmmAmmo++; collected.push('1 Dark Matter Missile'); }
+  }
+  if(missilesAdded) collected.push(`${missilesAdded} missile${missilesAdded===1?'':'s'}`);
+  grantXp(22 + credits*0.04);
+  sfxOreCollect();
+  toast(`Salvaged: ${collected.length?collected.join(' · '):'no room in hold'}`, collected.length?'levelup':'warn');
+  if(leftBehind.length) toast(`Cargo full — left behind: ${leftBehind.join(' · ')}`, 'warn');
+  saveGame();
+}
+function updateDistressAndSalvage(dt){
+  if(distressZoneAllowed() && !distressSignal){
+    distressTimer -= dt;
+    if(distressTimer<=0) spawnDistressSignal();
+  }
+  distressDockable = false;
+  if(distressSignal){
+    distressSignal.age += dt;
+    distressDockable = Math.hypot(player.x-distressSignal.x, player.y-distressSignal.y) < DISTRESS_INTERACT_RADIUS;
+    if(distressSignal.age > DISTRESS_LIFETIME){
+      distressSignal = null;
+      distressDockable = false;
+      distressTimer = randomDistressDelay();
+      toast('Distress signal lost.', 'warn');
+    }
+  }
+  for(let i=salvageCaches.length-1;i>=0;i--){
+    const c=salvageCaches[i];
+    c.age += dt;
+    if(Math.hypot(player.x-c.x,player.y-c.y) < SALVAGE_CACHE_RADIUS+18){
+      collectSalvageCache(c);
+      salvageCaches.splice(i,1);
+    } else if(c.age > SALVAGE_CACHE_LIFETIME){
+      salvageCaches.splice(i,1);
+    }
+  }
+}
 
 /* ============================= NEBULA / RAM SCOOP ============================= */
 const RAM_SCOOP_UNLOCK_FRIGATES = 15;  // frigate kills required to unlock Ram Scoop + the Nebula Gate
@@ -714,6 +988,7 @@ let gateReady = false;
 let outpostDockable = false;
 let docked = false;
 let manifestOpen = false;
+let questJournalOpen = false;
 let msgCooldown = 0;
 let energyWarnCooldown = 0;
 let gasTankWarnCooldown = 0;
@@ -820,6 +1095,84 @@ function smeltOre(oreKey, amount){
   sfxSmelt();
   return true;
 }
+function craftWater(){
+  const hydrogen = player.cargo.hydrogen || 0;
+  const oxygen = player.cargo.oxygen || 0;
+  if(hydrogen < WATER_HYDROGEN_COST || oxygen < WATER_OXYGEN_COST) return false;
+  if(cargoUsed() + WATER_OUTPUT > cargoCapacity()){
+    toast(`Need ${WATER_OUTPUT} free cargo slots for the water.`, 'warn');
+    return false;
+  }
+  player.cargo.hydrogen = hydrogen - WATER_HYDROGEN_COST;
+  player.cargo.oxygen = oxygen - WATER_OXYGEN_COST;
+  player.cargo.water = (player.cargo.water || 0) + WATER_OUTPUT;
+  toast(`Synthesized ${WATER_OUTPUT} Water from ${WATER_HYDROGEN_COST} H₂ and ${WATER_OXYGEN_COST} O₂.`, 'levelup');
+  sfxSmelt();
+  return true;
+}
+
+
+function civilianTier(){
+  let t=CIV_REP_TIERS[0]; for(const x of CIV_REP_TIERS) if((player.civilianRep||0)>=x.min)t=x; return t;
+}
+function currentMarket(){ return MARKET_EVENTS[player.marketEventIndex||0] || MARKET_EVENTS[0]; }
+function marketMultiplier(k){ return currentMarket().mods[k] || 1; }
+function rollMarket(force=false){
+  player.marketCycle=(player.marketCycle||0)+1;
+  if(force || player.marketCycle%2===0){ let n=Math.floor(Math.random()*MARKET_EVENTS.length); if(n===player.marketEventIndex)n=(n+1)%MARKET_EVENTS.length; player.marketEventIndex=n; toast(`Market update: ${currentMarket().name}`, 'warn'); }
+}
+function namedPirateById(id){ return NAMED_PIRATES.find(x=>x.id===id); }
+function allKeyPieces(){ return NAMED_PIRATES.every(x=>player.keyPieces && player.keyPieces[x.id]); }
+function keyPieceCount(){ return NAMED_PIRATES.filter(x=>player.keyPieces && player.keyPieces[x.id]).length; }
+function maybeUnlockHideout(){
+  if(player.hideoutUnlocked)return true;
+  const scrap=player.cargo.scrap_metal||0;
+  if(allKeyPieces() && scrap>=HIDEOUT_SCRAP_COST){
+    player.cargo.scrap_metal-=HIDEOUT_SCRAP_COST; player.hideoutUnlocked=true;
+    toast('Pirate Key assembled! 1,000 Scrap consumed — planetary hideout coordinates unlocked.', 'levelup'); sfxLevelUp(); saveGame(); return true;
+  }
+  return false;
+}
+function hideoutProgressHtml(){
+  const pieces=NAMED_PIRATES.map(p=>`${player.keyPieces&&player.keyPieces[p.id]?'✓':'○'} ${p.piece} — ${p.name}`).join('<br>');
+  return `${pieces}<br><br>Scrap Metal: ${(player.cargo.scrap_metal||0).toLocaleString()} / ${HIDEOUT_SCRAP_COST.toLocaleString()}`;
+}
+
+
+/* ============================= CREW EQUIPMENT / ARMORY ============================= */
+const ARMORY_CAPACITY=10, EQUIPMENT_MAX_LEVEL=5, EQUIPMENT_UPGRADE_COST=10;
+const CREW_BASE_HP={miner:105,nav:90,quarter:95,weapons:115,metallurgist:90,gastech:88};
+const EQUIPMENT_CATALOG={
+  padded_suit:{name:'Padded Boarding Suit',slot:'armor',power:10},security_armor:{name:'Security Armor',slot:'armor',power:22},pirate_armor:{name:'Pirate Combat Armor',slot:'armor',power:30},black_tide_armor:{name:"Black Tide's Armor",slot:'armor',power:42,named:true},
+  utility_knife:{name:'Utility Knife',slot:'melee',power:5},shock_baton:{name:'Shock Baton',slot:'melee',power:10},boarding_axe:{name:'Boarding Axe',slot:'melee',power:15},rust_fang_axe:{name:"Rust Fang's Boarding Axe",slot:'melee',power:21,named:true},
+  service_pistol:{name:'Service Pistol',slot:'ranged',power:7},smg:{name:'Pirate SMG',slot:'ranged',power:12},pulse_rifle:{name:'Pulse Rifle',slot:'ranged',power:17},vega_rifle:{name:"Ghost of Vega's Pulse Rifle",slot:'ranged',power:24,named:true},
+  medkit:{name:'Field Med Kit',slot:'special',power:10,effect:'HP reserve'},scanner:{name:'Tactical Scanner',slot:'special',power:8,effect:'Loot scan'},shield_belt:{name:'Shield Belt',slot:'special',power:14,effect:'Damage buffer'},widow_scanner:{name:"Widowmaker's Scanner",slot:'special',power:19,effect:'Vault scan',named:true}
+};
+function makeItem(baseId,level=0){const b=EQUIPMENT_CATALOG[baseId]||EQUIPMENT_CATALOG.service_pistol;return {uid:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),baseId,name:b.name,slot:b.slot,power:b.power,level:Math.max(0,Math.min(EQUIPMENT_MAX_LEVEL,level|0)),named:!!b.named,effect:b.effect||''};}
+function itemScore(it){return it?(it.power||0)+(it.level||0)*3:0;}
+function emptyEquipment(){return {armor:null,melee:null,ranged:null,special:null};}
+function migrateCrewEquipment(){crew.forEach((c,i)=>{c.id=c.id||('crew'+i+'_'+Math.random().toString(36).slice(2,7));c.equipment=c.equipment||emptyEquipment();for(const k of ['armor','melee','ranged','special'])if(!(k in c.equipment))c.equipment[k]=null;});}
+function crewBaseHp(c){return CREW_BASE_HP[c.role]||90;}
+function crewMaxHp(c){return crewBaseHp(c)+(c.equipment?.armor?itemScore(c.equipment.armor):0)+(c.equipment?.special?.baseId==='medkit'?10:0);}
+function teamMaxHp(){migrateCrewEquipment();return 100+crew.reduce((n,c)=>n+crewMaxHp(c),0);}
+function teamAttack(){migrateCrewEquipment();let total=12;crew.forEach(c=>{total+=Math.max(itemScore(c.equipment.melee),itemScore(c.equipment.ranged));});return Math.max(18,Math.round(total/Math.max(1,crew.length||1)));}
+function conversionValue(it){return it&&it.level>0?2:1;}
+function convertItem(it,quiet=false){if(!it)return;const pts=conversionValue(it);player.upgradePoints=(player.upgradePoints||0)+pts;if(!quiet)toast(`${it.name}${it.level?' +'+it.level:''} recycled: +${pts} Upgrade Point${pts===1?'':'s'}.`,'levelup');}
+function addToArmory(it){if(armory.length<ARMORY_CAPACITY){armory.push(it);toast(`${it.name}${it.level?' +'+it.level:''} added to the Armory.`);return true;}convertItem(it);toast(`Armory full — ${it.name} was automatically recycled.`,'warn');return false;}
+function starterEquipment(c){if(!c.equipment)c.equipment=emptyEquipment();if(!c.equipment.armor)c.equipment.armor=makeItem('padded_suit');if(!c.equipment.melee)c.equipment.melee=makeItem('utility_knife');if(!c.equipment.ranged)c.equipment.ranged=makeItem('service_pistol');if(!c.equipment.special)c.equipment.special=makeItem((c.role==='gastech'||c.role==='metallurgist')?'scanner':'medkit');}
+function gearHtml(it,where,idx,slot){if(!it)return '<div class="armory-empty">Empty</div>';const lvl=it.level?` +${it.level}`:'';return `<div class="gear-chip" draggable="true" ondragstart="gearDrag(event,'${where}',${idx},'${slot||''}')"><div><div class="gear-name">${it.name}${lvl}</div><div class="gear-meta">${it.slot.toUpperCase()} · Power ${itemScore(it)}${it.effect?' · '+it.effect:''}</div></div>${where==='armory'?`<div class="gear-actions"><button class="tiny-btn" onclick="event.stopPropagation();upgradeArmoryItem(${idx})">UP</button><button class="tiny-btn" onclick="event.stopPropagation();recycleArmoryItem(${idx})">♻</button></div>`:''}</div>`;}
+let gearDragData=null;
+function gearDrag(e,where,idx,slot){gearDragData={where,idx,slot};e.dataTransfer.effectAllowed='move';}
+function gearOver(e){e.preventDefault();e.currentTarget.classList.add('dragover');}
+function gearLeave(e){e.currentTarget.classList.remove('dragover');}
+function takeDragged(){if(!gearDragData)return null;let it=null;if(gearDragData.where==='armory')it=armory.splice(gearDragData.idx,1)[0];else{const c=crew[gearDragData.idx];it=c?.equipment?.[gearDragData.slot]||null;if(c&&c.equipment)c.equipment[gearDragData.slot]=null;}return it;}
+function dropOnCrew(e,crewIdx,slot){e.preventDefault();e.currentTarget.classList.remove('dragover');if(!gearDragData)return;const source={...gearDragData};const preview=source.where==='armory'?armory[source.idx]:crew[source.idx]?.equipment?.[source.slot];if(!preview||preview.slot!==slot){toast(`That item belongs in the ${preview?.slot||'correct'} slot.`,'warn');gearDragData=null;return;}const incoming=takeDragged(),c=crew[crewIdx],old=c.equipment[slot];c.equipment[slot]=incoming;if(old)addToArmory(old);gearDragData=null;renderCrewTab();saveGame();}
+function dropOnArmory(e){e.preventDefault();e.currentTarget.classList.remove('dragover');if(!gearDragData)return;if(gearDragData.where==='armory'){gearDragData=null;return;}const incoming=takeDragged();if(incoming)addToArmory(incoming);gearDragData=null;renderCrewTab();saveGame();}
+function recycleArmoryItem(i){const it=armory.splice(i,1)[0];convertItem(it);renderCrewTab();saveGame();}
+function upgradeArmoryItem(i){const it=armory[i];if(!it)return;if(it.level>=EQUIPMENT_MAX_LEVEL){toast('That item is already +5.','warn');return;}if((player.upgradePoints||0)<EQUIPMENT_UPGRADE_COST){toast(`Need ${EQUIPMENT_UPGRADE_COST} Upgrade Points.`,'warn');return;}player.upgradePoints-=EQUIPMENT_UPGRADE_COST;it.level++;toast(`${it.name} upgraded to +${it.level}!`,'levelup');renderCrewTab();saveGame();}
+function unequipAll(){migrateCrewEquipment();crew.forEach(c=>['armor','melee','ranged','special'].forEach(slot=>{const it=c.equipment[slot];if(it){c.equipment[slot]=null;addToArmory(it);}}));renderCrewTab();saveGame();}
+function autoEquipBest(){migrateCrewEquipment();const all=[...armory];armory=[];crew.forEach(c=>['armor','melee','ranged','special'].forEach(slot=>{if(c.equipment[slot])all.push(c.equipment[slot]);c.equipment[slot]=null;}));for(const slot of ['armor','melee','ranged','special']){const pool=all.filter(x=>x.slot===slot).sort((a,b)=>itemScore(b)-itemScore(a));crew.forEach((c,i)=>{if(pool[i])c.equipment[slot]=pool[i];});const used=new Set(crew.map(c=>c.equipment[slot]?.uid).filter(Boolean));for(const it of pool)if(!used.has(it.uid))armory.push(it);}while(armory.length>ARMORY_CAPACITY)convertItem(armory.pop(),true);toast('Best Equipment Config applied.','levelup');renderCrewTab();saveGame();}
+function randomEquipment(isBoss=false){const common=['security_armor','pirate_armor','shock_baton','boarding_axe','smg','pulse_rifle','medkit','scanner','shield_belt'];const boss=['black_tide_armor','rust_fang_axe','vega_rifle','widow_scanner'];return makeItem((isBoss?boss:common)[Math.floor(Math.random()*(isBoss?boss:common).length)],isBoss?2:(Math.random()<.12?1:0));}
 
 /* ============================= SAVE / LOAD ============================= */
 let saveFailCount = 0;
@@ -831,7 +1184,7 @@ async function saveGame(){
   const now = performance.now();
   if(now < saveDisabledUntil) return;
   const escortSave = escort ? {level:escort.level, xp:escort.xp, cargo:escort.cargo} : null;
-  const data = {player, crew, quest, zone, escort: escortSave};
+  const data = {player, crew, armory, quest, zone, escort: escortSave, distressTimer};
   try{
     if(hasClaudeStorage()){
       const result = await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
@@ -865,11 +1218,16 @@ async function loadGame(){
     if(raw){
       const data = JSON.parse(raw);
       Object.assign(player, data.player);
+      player.namedPirateKills=player.namedPirateKills||{}; player.keyPieces=player.keyPieces||{}; player.civilianRep=player.civilianRep||0; player.marketEventIndex=player.marketEventIndex||0;
+      player.gems=player.gems||0; player.pirateTechPieces=player.pirateTechPieces||0; player.upgradePoints=player.upgradePoints||0; player.hideoutCleared=!!player.hideoutCleared;
       player.hullMax = hullMaxSafe(data.player);
       crew = data.crew || [];
+      armory = Array.isArray(data.armory) ? data.armory.slice(0,10) : [];
+      migrateCrewEquipment();
       if(data.quest) Object.assign(quest, data.quest);
       if(data.zone) zone = data.zone;
       if(data.escort) escortSaveData = data.escort;
+      if(Number.isFinite(data.distressTimer)) distressTimer = Math.max(15,data.distressTimer);
       return true;
     }
   }catch(e){ /* no save yet */ }
@@ -890,6 +1248,7 @@ async function startGame(){
   initAudio();
   document.getElementById('start-screen').style.display = 'none';
   await loadGame();
+  migrateCrewEquipment(); crew.forEach(starterEquipment);
   player.hull = Math.min(player.hull, hullMax());
   player.energy = (player.energy===undefined) ? energyMax() : Math.min(player.energy, energyMax());
   player.shield = (player.shield===undefined) ? shieldMax() : Math.min(player.shield, shieldMax());
@@ -961,16 +1320,40 @@ window.addEventListener('touchend', stopHoldRepeat);
 window.addEventListener('touchcancel', stopHoldRepeat);
 
 window.addEventListener('keydown', e=>{
+  if(document.getElementById('hideout-overlay')?.classList.contains('open')){ const k=e.key.toLowerCase(); if(k==='arrowup'||k==='w')moveDungeon(0,-1); else if(k==='arrowdown'||k==='s')moveDungeon(0,1); else if(k==='arrowleft'||k==='a')moveDungeon(-1,0); else if(k==='arrowright'||k==='d')moveDungeon(1,0); else if(k===' '||k==='e')dungeonAttack(); else if(k==='escape')closeHideout(); e.preventDefault(); return; }
   keys[e.key.toLowerCase()] = true;
   if(e.key===' '){ firing = true; e.preventDefault(); }
-  if(e.key.toLowerCase()==='e'){ tryDock(); }
+  if(e.key.toLowerCase()==='e'){ if(distressDockable) resolveDistressSignal(); else tryDock(); }
   if(e.key.toLowerCase()==='z'){ fireMissile(); }
   if(e.key.toLowerCase()==='i'){ toggleManifest(); }
-  if(e.key==='Escape'){ closeStation(); closeOutpost(); closeManifest(); }
+  if(e.key.toLowerCase()==='j'){ toggleQuestJournal(); }
+  if(e.key==='Escape'){ closeStation(); closeOutpost(); closeManifest(); closeQuestJournal(); }
 });
 window.addEventListener('keyup', e=>{
   keys[e.key.toLowerCase()] = false;
   if(e.key===' '){ firing = false; }
+});
+
+// Clear held controls whenever the browser loses focus so thrust, laser, or scoop cannot get stuck on.
+window.addEventListener('blur', ()=>{
+  keys = {};
+  firing = false;
+});
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){
+    keys = {};
+    firing = false;
+  }
+});
+
+// Browsers reserve Ctrl+W, so the game no longer uses Ctrl. This warning adds a final safety net
+// for accidental refreshes or tab closes while a run is active.
+window.addEventListener('beforeunload', e=>{
+  if(!running) return;
+  saveGame();
+  e.preventDefault();
+  e.returnValue = '';
 });
 
 /* ============================= ASTEROID / ORE LOGIC ============================= */
@@ -1103,6 +1486,7 @@ function spawnStargate(){
 }
 function warpZone(){
   sfxWarp();
+  distressSignal = null; distressDockable = false; distressTimer = randomDistressDelay();
   // stash the zone we're leaving, restore (or start fresh) whatever the destination zone had
   zoneStash[zone] = { asteroids, pirates, oreChunks, gasClouds };
   const newZone = zone === 'normal' ? 'deep' : 'normal';
@@ -1130,6 +1514,7 @@ function warpZone(){
 
 function warpNebula(){
   sfxWarp();
+  distressSignal = null; distressDockable = false; distressTimer = randomDistressDelay();
   zoneStash[zone] = { asteroids, pirates, oreChunks, gasClouds };
   const newZone = zone === 'nebula' ? 'deep' : 'nebula';
   if(zoneStash[newZone]){
@@ -1155,24 +1540,26 @@ function warpNebula(){
 }
 
 /* ============================= PIRATES ============================= */
-function spawnPirate(x,y){
+function spawnPirate(x,y, namedId=null){
+  if(!namedId && Math.random()<0.08){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
   pirates.push({
     x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
     hp: PIRATE_HP_BASE, maxHp: PIRATE_HP_BASE,
     shield: 0, shieldMax: 0, shieldRegenCooldown: 0, isFrigate: false,
     state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
     fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {},
+    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
   });
 }
-function spawnFrigate(x,y){
+function spawnFrigate(x,y, namedId=null){
+  if(!namedId && Math.random()<0.10){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
   pirates.push({
     x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
     hp: FRIGATE_HP, maxHp: FRIGATE_HP,
     shield: FRIGATE_SHIELD, shieldMax: FRIGATE_SHIELD, shieldRegenCooldown: 0, isFrigate: true,
     state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
     fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {},
+    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
   });
 }
 function ensurePiratePopulation(){
@@ -1187,6 +1574,8 @@ function ensurePiratePopulation(){
     } while(Math.hypot(x-STATION.x,y-STATION.y) < 700 || Math.hypot(x-player.x,y-player.y) < 500);
     spawnPirate(x,y);
   }
+  const eligible=NAMED_PIRATES.filter(n=>n.zone==='normal' && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
+  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnPirate(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
 }
 function ensureFrigatePopulation(){
   const target = FRIGATE_TARGET_COUNT;
@@ -1200,8 +1589,11 @@ function ensureFrigatePopulation(){
     } while(Math.hypot(x-player.x,y-player.y) < 500);
     spawnFrigate(x,y);
   }
+  const eligible=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
+  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnFrigate(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
 }
-function spawnCorvette(x,y){
+function spawnCorvette(x,y, namedId=null){
+  if(!namedId && Math.random()<0.12){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
   pirates.push({
     x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
     hp: CORVETTE_HP, maxHp: CORVETTE_HP,
@@ -1209,7 +1601,7 @@ function spawnCorvette(x,y){
     isFrigate: false, isCorvette: true,
     state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
     fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {},
+    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
   });
 }
 function ensureCorvettePopulation(){
@@ -1224,6 +1616,8 @@ function ensureCorvettePopulation(){
     } while(Math.hypot(x-player.x,y-player.y) < 500 || Math.hypot(x-NEBULA_GATE_POS.x,y-NEBULA_GATE_POS.y) < 400);
     spawnCorvette(x,y);
   }
+  const eligible=NAMED_PIRATES.filter(n=>n.zone==='nebula' && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
+  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnCorvette(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
 }
 // Shared damage helper for pirates/frigates — shield absorbs first, same pattern as the player's applyDamage.
 function damagePirate(p, amount){
@@ -1237,6 +1631,21 @@ function damagePirate(p, amount){
   if(remaining>0) p.hp -= remaining;
   p.shieldRegenCooldown = 3;
 }
+let pirateLootPickupBatch = {};
+let pirateLootPickupTimer = null;
+function queuePirateLootPickup(material, qty=1){
+  pirateLootPickupBatch[material] = (pirateLootPickupBatch[material]||0) + qty;
+  if(pirateLootPickupTimer) clearTimeout(pirateLootPickupTimer);
+  pirateLootPickupTimer = setTimeout(()=>{
+    const parts = Object.entries(pirateLootPickupBatch).map(([mat,count])=>{
+      const name = MATERIALS[mat] ? MATERIALS[mat].name : mat;
+      return `${count} ${name}`;
+    });
+    if(parts.length) toast(`Pirate loot recovered: ${parts.join(' · ')}`, 'levelup');
+    pirateLootPickupBatch = {};
+    pirateLootPickupTimer = null;
+  }, 450);
+}
 function destroyPirate(p){
   const idx = pirates.indexOf(p);
   if(idx>=0) pirates.splice(idx,1);
@@ -1247,14 +1656,19 @@ function destroyPirate(p){
   const bounty = Math.round((PIRATE_BOUNTY_MIN + Math.random()*(PIRATE_BOUNTY_MAX-PIRATE_BOUNTY_MIN)) * bountyMul);
   player.credits += bounty;
   grantXp(bounty*0.15);
-  const shipLabel = p.isCorvette ? 'Corvette' : (p.isFrigate ? 'Frigate' : 'Pirate');
+  const shipLabel = p.pirateName || (p.isCorvette ? 'Corvette' : (p.isFrigate ? 'Frigate' : 'Pirate'));
   toast(`${shipLabel} destroyed! +${bounty} cr bounty`, 'levelup');
+  if(p.namedId){
+    player.namedPirateKills=player.namedPirateKills||{}; player.keyPieces=player.keyPieces||{}; player.namedPirateKills[p.namedId]=true;
+    const np=namedPirateById(p.namedId);
+    if(np && !player.keyPieces[p.namedId]){ player.keyPieces[p.namedId]=true; toast(`KEY PIECE RECOVERED: ${np.piece} (${keyPieceCount()}/${NAMED_PIRATES.length})`, 'levelup'); sfxLevelUp(); }
+  }
   // any cargo it stole but hadn't gotten away with drops back as recoverable ore
   Object.keys(p.stolen).forEach(mat=>{
     for(let i=0;i<p.stolen[mat];i++){
       const ang = Math.random()*Math.PI*2;
       const speed = 30+Math.random()*40;
-      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:mat,life:0});
+      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:mat,life:0,source:'pirate_loot'});
     }
   });
   spawnDebris(p.x,p.y, p.isCorvette ? '#a3b8c2' : (p.isFrigate ? '#ff6a3d' : '#e0546b'));
@@ -1264,7 +1678,7 @@ function destroyPirate(p){
     for(let i=0;i<scrapQty;i++){
       const ang = Math.random()*Math.PI*2;
       const speed = 25+Math.random()*35;
-      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:'scrap_metal',life:0});
+      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:'scrap_metal',life:0,source:'pirate_loot'});
     }
     toast(`Corvette wreck left ${scrapQty} Scrap Metal behind — go harvest it.`);
   }
@@ -1726,7 +2140,7 @@ function loop(now){
   if(!running) return;
   const dt = Math.min((now-last)/1000, 0.05);
   last = now;
-  if(!docked && !manifestOpen){
+  if(!docked && !manifestOpen && !questJournalOpen){
     update(dt);
   }
   render();
@@ -1790,8 +2204,10 @@ function update(dt){
     const distToNebulaGate = Math.hypot(player.x-nebulaGate.x, player.y-nebulaGate.y);
     nebulaGateReady = distToNebulaGate < nebulaGate.radius;
   }
+  updateDistressAndSalvage(dt);
+
   outpostDockable = false;
-  if(zone === 'deep'){
+  if(zone === 'deep' || zone === 'nebula'){
     const distToOutpost = Math.hypot(player.x-OUTPOST_POS.x, player.y-OUTPOST_POS.y);
     outpostDockable = distToOutpost < OUTPOST_DOCK_RADIUS;
   }
@@ -1900,8 +2316,8 @@ function update(dt){
   }
 
   // tractor beam
-  const tractorOn = player.tractorLevel > 0 && (keys['shift']||keys['control']) && player.energy > 0.05;
-  const scoopOn = player.hasRamScoop && (keys['shift']||keys['control']) && player.energy > 0.05;
+  const tractorOn = player.tractorLevel > 0 && keys['shift'] && player.energy > 0.05;
+  const scoopOn = player.hasRamScoop && keys['shift'] && player.energy > 0.05;
   if((tractorOn||scoopOn) && !tractorSoundOn){ startTractorLoop(); tractorSoundOn = true; }
   if(!tractorOn && !scoopOn && tractorSoundOn){ stopTractorLoop(); tractorSoundOn = false; }
   tractorTargets = [];
@@ -1963,6 +2379,7 @@ function update(dt){
       if(cargoUsed() + chunkWeight <= cargoCapacity()){
         player.cargo[o.material] = (player.cargo[o.material]||0) + 1;
         sfxOreCollect();
+        if(o.source==='pirate_loot') queuePirateLootPickup(o.material, 1);
         if(o.material==='darkmatter'){
           quest.darkMatterCollected++;
           checkQuestCompletion();
@@ -2000,12 +2417,15 @@ function update(dt){
 
 function updatePrompt(){
   const el = document.getElementById('prompt');
-  if(dockable && !docked){
+  if(distressDockable && !docked){
+    el.style.display = 'block';
+    el.textContent = 'Press E to investigate distress signal';
+  } else if(dockable && !docked){
     el.style.display = 'block';
     el.textContent = 'Press E to dock at Ceres Anchorage';
   } else if(outpostDockable && !docked){
     el.style.display = 'block';
-    el.textContent = 'Press E to dock at the Black Market Relay';
+    el.textContent = zone==='nebula' ? 'Press E to dock at the Nebula Trade Relay' : 'Press E to dock at the Black Market Relay';
   } else if(gateReady){
     el.style.display = 'block';
     el.textContent = zone==='normal' ? 'Press E to activate Stargate — warp to Deep Zone' : 'Press E to activate Stargate — warp home';
@@ -2073,7 +2493,7 @@ function render(){
 
   // station
   if(zone === 'normal') drawStation();
-  if(zone === 'deep') drawOutpost();
+  if(zone === 'deep' || zone === 'nebula') drawOutpost();
   if(zone !== 'nebula' && stargate) drawStargate();
   if(zone !== 'normal' && nebulaGate) drawNebulaGate();
 
@@ -2122,6 +2542,35 @@ function render(){
     }
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  // distress signal and salvage caches
+  if(distressSignal){
+    const sx=distressSignal.x-camera.x, sy=distressSignal.y-camera.y;
+    if(sx>-100&&sx<W+100&&sy>-100&&sy<H+100){
+      const pulse=0.5+0.5*Math.sin(performance.now()*0.006+distressSignal.pulse);
+      ctx.save(); ctx.translate(sx,sy);
+      ctx.strokeStyle=`rgba(224,84,107,${0.45+0.45*pulse})`;
+      ctx.shadowColor='#e0546b'; ctx.shadowBlur=12;
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(0,0,18+8*pulse,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-7,0); ctx.lineTo(7,0); ctx.moveTo(0,-7); ctx.lineTo(0,7); ctx.stroke();
+      ctx.shadowBlur=0; ctx.fillStyle='#f0a8b2'; ctx.font='10px "JetBrains Mono", monospace'; ctx.textAlign='center';
+      ctx.fillText('DISTRESS',0,-32); ctx.restore();
+    }
+  }
+  for(const c of salvageCaches){
+    const sx=c.x-camera.x, sy=c.y-camera.y;
+    if(sx<-80||sx>W+80||sy<-80||sy>H+80) continue;
+    const pulse=0.55+0.45*Math.sin(performance.now()*0.005+c.pulse);
+    ctx.save(); ctx.translate(sx,sy); ctx.rotate(performance.now()*0.0004);
+    ctx.fillStyle='#252c33'; ctx.strokeStyle='#f2a154'; ctx.lineWidth=1.8;
+    ctx.shadowColor='#f2a154'; ctx.shadowBlur=8*pulse;
+    ctx.fillRect(-12,-9,24,18); ctx.strokeRect(-12,-9,24,18);
+    ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(12,0); ctx.moveTo(0,-9); ctx.lineTo(0,9); ctx.stroke();
+    ctx.restore();
+    ctx.save(); ctx.fillStyle='#f2a154'; ctx.font='10px "JetBrains Mono", monospace'; ctx.textAlign='center';
+    ctx.fillText(c.label,sx,sy-22); ctx.restore();
   }
 
   // ore chunks
@@ -2499,6 +2948,21 @@ function drawRadar(){
     radarCtx.beginPath(); radarCtx.arc(rx,ry,2.3,0,Math.PI*2); radarCtx.fill();
   }
 
+  // distress and salvage blips
+  if(distressSignal){
+    const dx=distressSignal.x-player.x, dy=distressSignal.y-player.y;
+    const dist=Math.hypot(dx,dy), ang=Math.atan2(dy,dx), clamped=Math.min(dist,range*0.92);
+    const rx=Math.cos(ang)*(clamped/range)*R, ry=Math.sin(ang)*(clamped/range)*R;
+    radarCtx.fillStyle='#e0546b'; radarCtx.shadowColor='#e0546b'; radarCtx.shadowBlur=7;
+    radarCtx.beginPath(); radarCtx.arc(rx,ry,3.8,0,Math.PI*2); radarCtx.fill(); radarCtx.shadowBlur=0;
+  }
+  for(const c of salvageCaches){
+    const dx=c.x-player.x, dy=c.y-player.y, dist=Math.hypot(dx,dy);
+    if(dist>range) continue;
+    radarCtx.fillStyle='#f2a154';
+    radarCtx.fillRect((dx/range)*R-2,(dy/range)*R-2,4,4);
+  }
+
   // station blip - clamp to edge if beyond range, with direction arrow (normal zone only)
   let sdist = null;
   if(zone==='normal'){
@@ -2566,9 +3030,9 @@ function drawRadar(){
     radarCtx.globalAlpha = 1;
   }
 
-  // outpost blip — deep zone only
+  // trade relay blip — deep and nebula zones
   let odist = null;
-  if(zone === 'deep'){
+  if(zone === 'deep' || zone === 'nebula'){
     const odx = OUTPOST_POS.x-player.x, ody = OUTPOST_POS.y-player.y;
     odist = Math.hypot(odx,ody);
     const oang = Math.atan2(ody,odx);
@@ -2899,7 +3363,7 @@ function updateHUD(){
     let label, barColor, barPct = hpPct;
     if(effType==='pirate'){
       if(effTarget.isFrigate || effTarget.isCorvette){
-        const shipName = effTarget.isCorvette ? 'Corvette' : 'Frigate';
+        const shipName = effTarget.pirateName || (effTarget.isCorvette ? 'Corvette' : 'Frigate');
         label = `${shipName} — Shield ${Math.max(0,Math.ceil(effTarget.shield))}/${effTarget.shieldMax} · Hull ${Math.max(0,Math.ceil(effTarget.hp))}/${effTarget.maxHp}`;
         if(effTarget.shield>0){
           barColor = 'linear-gradient(90deg,#5b2d8f,#a855f7)';
@@ -2909,7 +3373,7 @@ function updateHUD(){
           barPct = hpPct;
         }
       } else {
-        label = `Pirate — ${Math.max(0,Math.ceil(effTarget.hp))}/${effTarget.maxHp} HP`;
+        label = `${effTarget.pirateName || 'Pirate'} — ${Math.max(0,Math.ceil(effTarget.hp))}/${effTarget.maxHp} HP`;
         barColor = 'linear-gradient(90deg,#7a2030,#e0546b)';
       }
     } else if(effTarget.material){
@@ -2971,12 +3435,55 @@ function renderCrewPanel(){
   }
 }
 
+
+/* ============================= PIRATE HIDEOUT DUNGEON ============================= */
+let dungeon=null;
+const DUNGEON_MAP=[
+'#########','#P..#..L#','#.#.#.#.#','#.#...#.#','#.###.#.#','#...E...#','###.#.###','#L..#..B#','####X####'];
+function initDungeon(){
+  const maxHp=teamMaxHp(); dungeon={hp:maxHp,maxHp,attack:teamAttack(),scrap:0,credits:0,gems:0,floor:1,px:1,py:1,enemies:{'3,5':45,'7,7':110},loot:{'7,1':true,'1,7':true},exitOpen:false,log:[]};
+  dungeonLog('Planetfall complete. Find loot, clear the guards, and reach X.'); renderDungeon();
+}
+function openHideout(){ if(player.hideoutCleared){toast('This pirate hideout has been permanently cleared. No respawns.','warn');return;} if(!player.hideoutUnlocked && !maybeUnlockHideout())return; closeStation(); document.getElementById('hideout-overlay').classList.add('open'); if(!dungeon)initDungeon(); else renderDungeon(); }
+function closeHideout(){ document.getElementById('hideout-overlay').classList.remove('open'); }
+function leaveDungeon(){ player.dungeonRuns=(player.dungeonRuns||0)+1; if(dungeon){player.cargo.scrap_metal=(player.cargo.scrap_metal||0)+(dungeon.scrap||0);player.credits+=(dungeon.credits||0);player.gems=(player.gems||0)+(dungeon.gems||0);if(dungeon.scrap||dungeon.credits||dungeon.gems)toast(`Returned with ${dungeon.scrap||0} Scrap, ${dungeon.credits||0} credits, and ${dungeon.gems||0} gems.`, 'levelup');} dungeon=null; closeHideout(); saveGame(); }
+function dungeonLog(msg){ if(!dungeon)return; dungeon.log.push(msg); if(dungeon.log.length>30)dungeon.log.shift(); const el=document.getElementById('hideout-log'); if(el){el.innerHTML=dungeon.log.map(x=>'› '+x).join('<br>');el.scrollTop=el.scrollHeight;} }
+function tileAt(x,y){ return (DUNGEON_MAP[y]||'')[x]||'#'; }
+function enemyAt(x,y){ return dungeon.enemies[`${x},${y}`]; }
+function moveDungeon(dx,dy){
+  if(!dungeon)return; const nx=dungeon.px+dx,ny=dungeon.py+dy,t=tileAt(nx,ny); if(t==='#'){dungeonLog('Bulkhead blocks the way.');return;}
+  if(enemyAt(nx,ny)){ dungeonLog('Enemy blocks the corridor. Use ⚔ to attack.'); return; }
+  dungeon.px=nx; dungeon.py=ny;
+  const key=`${nx},${ny}`;
+  if(dungeon.loot[key]){ delete dungeon.loot[key]; const roll=Math.random(); if(roll<.34){const gain=250+Math.floor(Math.random()*501);dungeon.credits+=gain;dungeonLog(`Cargo chest: +${gain} credits.`);}else if(roll<.57){const gain=1+Math.floor(Math.random()*3);dungeon.gems+=gain;dungeonLog(`Cargo chest: ${gain} gem${gain===1?'':'s'}.`);}else if(roll<.72){player.pirateTechPieces=Math.min(5,(player.pirateTechPieces||0)+1);dungeonLog(`Pirate Tech recovered (${player.pirateTechPieces}/5).`);}else{const it=randomEquipment(false);addToArmory(it);dungeonLog(`Equipment recovered: ${it.name}${it.level?' +'+it.level:''}.`);renderCrewTab();}}
+  if(t==='X'){ if(Object.keys(dungeon.enemies).length===0){ dungeonLog('Hideout command vault breached!'); const bossItem=randomEquipment(true);addToArmory(bossItem);dungeon.credits+=5000;player.hideoutCleared=true;player.dungeonBestFloor=Math.max(player.dungeonBestFloor||0,dungeon.floor);toast(`Hideout permanently cleared! Boss drop: ${bossItem.name} +2`,'levelup');leaveDungeon();return;}else dungeonLog('Vault locked. Hostiles remain.'); }
+  enemyTurn(); renderDungeon();
+}
+function dungeonAttack(){
+  if(!dungeon)return; const dirs=[[1,0],[-1,0],[0,1],[0,-1]]; let target=null;
+  for(const [dx,dy] of dirs){const k=`${dungeon.px+dx},${dungeon.py+dy}`;if(dungeon.enemies[k]){target=k;break;}}
+  if(!target){dungeonLog('No adjacent target.');return;} dungeon.enemies[target]-=dungeon.attack; dungeonLog(`You hit for ${dungeon.attack}.`);
+  if(dungeon.enemies[target]<=0){delete dungeon.enemies[target]; const gain=45+Math.floor(Math.random()*56);dungeon.scrap+=gain;dungeonLog(`Guard defeated. Salvaged ${gain} scrap.`);} else enemyTurn(); renderDungeon();
+}
+function enemyTurn(){
+  if(!dungeon)return; for(const k of Object.keys(dungeon.enemies)){const [x,y]=k.split(',').map(Number); if(Math.abs(x-dungeon.px)+Math.abs(y-dungeon.py)===1){const dmg=8+Math.floor(Math.random()*8);dungeon.hp-=dmg;dungeonLog(`Raider hits you for ${dmg}.`); if(dungeon.hp<=0){toast('Boarding team defeated. Emergency extraction!', 'warn'); dungeon.scrap=Math.floor(dungeon.scrap/2); leaveDungeon(); return;}}}
+}
+function renderDungeon(){
+  if(!dungeon)return; const grid=document.getElementById('dungeon-grid'); let html='';
+  for(let y=0;y<9;y++)for(let x=0;x<9;x++){let t=tileAt(x,y),cls=t==='#'?'wall':'floor',ch=t==='#'?'▓':'·';const k=`${x},${y}`;
+    if(x===dungeon.px&&y===dungeon.py){cls+=' player';ch='▲';} else if(dungeon.enemies[k]){cls+=t==='B'?' boss':' enemy';ch=t==='B'?'☠':'⚔';} else if(dungeon.loot[k]){cls+=' loot';ch='◆';} else if(t==='X'){cls+=' exit';ch='X';}
+    html+=`<div class="dcell ${cls}">${ch}</div>`;} grid.innerHTML=html;
+  document.getElementById('dungeon-stats').innerHTML=`HP: ${Math.max(0,dungeon.hp)}/${dungeon.maxHp}<br>Attack: ${dungeon.attack}<br>Recovered: ${dungeon.scrap} scrap · ${dungeon.credits} cr · ${dungeon.gems} gems<br>Hostiles: ${Object.keys(dungeon.enemies).length}<br>Controls: arrows/WASD or buttons`; dungeonLog('');
+}
+
 /* ============================= STATION UI ============================= */
 function updateStationCredits(){
   const el = document.getElementById('station-credits-txt');
   if(el) el.textContent = Math.floor(player.credits).toLocaleString();
 }
 function openStation(){
+  rollMarket();
+  maybeUnlockHideout();
   document.getElementById('station-overlay').classList.add('open');
   renderSellTab();
   renderUpgradesTab();
@@ -2992,6 +3499,10 @@ function closeStation(){
 
 function openOutpost(){
   document.getElementById('outpost-overlay').classList.add('open');
+  const title = document.querySelector('#outpost-panel h1');
+  const subtitle = document.getElementById('outpost-subtitle');
+  if(title) title.textContent = zone==='nebula' ? 'Nebula Trade Relay' : 'Black Market Relay';
+  if(subtitle) subtitle.textContent = zone==='nebula' ? 'Docked · gas-field trading post, nebula zone' : 'Docked · unlicensed fence, deep zone';
   renderOutpostSell();
   renderOutpostMissiles();
   updateOutpostCredits();
@@ -3016,6 +3527,62 @@ function closeManifest(){
   manifestOpen = false;
   document.getElementById('manifest-overlay').classList.remove('open');
 }
+function questStep(done, text){
+  return `<div class="quest-step ${done?'done':''}">${done?'✓':'○'} ${text}</div>`;
+}
+function questCard(title, state, description, steps, cls=''){
+  return `<div class="quest-card ${cls}"><div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;"><div class="quest-title">${title}</div><div class="quest-state">${state}</div></div><div class="quest-desc">${description}</div>${steps.join('')}</div>`;
+}
+function toggleQuestJournal(){
+  questJournalOpen = !questJournalOpen;
+  const el=document.getElementById('quest-overlay');
+  if(questJournalOpen){
+    closeManifest();
+    el.classList.add('open');
+    renderQuestJournal();
+  } else el.classList.remove('open');
+}
+function closeQuestJournal(){
+  questJournalOpen=false;
+  document.getElementById('quest-overlay').classList.remove('open');
+}
+function renderQuestJournal(){
+  const el=document.getElementById('quest-list');
+  if(!el)return;
+  const rankIdx=factionRankIndex();
+  const frontierDone=!!quest.completed;
+  const rankDone=rankIdx>=QUEST_RANK_TARGET;
+  let html='';
+  html+=questCard('Frontier Trial', frontierDone?'Complete':'In Progress', 'Complete the faction trial to activate the Stargate leading to the Deep Zone', [
+    questStep(quest.piratesKilled>=QUEST_PIRATE_TARGET, `Destroy pirates — ${Math.min(quest.piratesKilled,QUEST_PIRATE_TARGET)}/${QUEST_PIRATE_TARGET}`),
+    questStep(quest.darkMatterCollected>=QUEST_DARKMATTER_TARGET, `Collect Dark Matter — ${Math.min(quest.darkMatterCollected,QUEST_DARKMATTER_TARGET)}/${QUEST_DARKMATTER_TARGET}`),
+    questStep(rankDone, `Reach ${FACTION_RANKS[QUEST_RANK_TARGET].name} faction rank`)
+  ], frontierDone?'complete':'');
+
+  const frigDone=player.frigatesKilled>=RAM_SCOOP_UNLOCK_FRIGATES;
+  const frigState=frigDone?'Complete':(player.nebulaQuestAccepted?'In Progress':'Available');
+  html+=questCard('Frigate Bounty', frigState, player.nebulaQuestAccepted||frigDone?'Destroy Frigates in the Deep Zone to unlock the Ram Scoop and Nebula Stargate.':'Accept this contract from the Faction tab at Ceres.', [
+    questStep(!!player.nebulaQuestAccepted||frigDone, player.nebulaQuestAccepted||frigDone?'Contract accepted':'Accept the contract at Ceres'),
+    questStep(frigDone, `Destroy Frigates — ${Math.min(player.frigatesKilled||0,RAM_SCOOP_UNLOCK_FRIGATES)}/${RAM_SCOOP_UNLOCK_FRIGATES}`)
+  ], frigDone?'complete':(!player.nebulaQuestAccepted?'locked':''));
+
+  const keysDone=allKeyPieces();
+  const scrapDone=(player.cargo.scrap_metal||0)>=HIDEOUT_SCRAP_COST || player.hideoutUnlocked || player.hideoutCleared;
+  const keyQuestDone=!!player.hideoutUnlocked||!!player.hideoutCleared;
+  const keySteps=NAMED_PIRATES.map(p=>questStep(!!(player.keyPieces&&player.keyPieces[p.id]), `${p.piece} from ${p.name}`));
+  keySteps.push(questStep(scrapDone, `Gather Scrap Metal — ${keyQuestDone?HIDEOUT_SCRAP_COST:Math.min(player.cargo.scrap_metal||0,HIDEOUT_SCRAP_COST)}/${HIDEOUT_SCRAP_COST}`));
+  keySteps.push(questStep(keyQuestDone, 'Assemble the Pirate Key'));
+  html+=questCard('Pirate Key Hunt', keyQuestDone?'Complete':'In Progress', 'Defeat each named pirate, recover every key component, and assemble the key using Scrap Metal.', keySteps, keyQuestDone?'complete':'');
+
+  const hideoutDone=!!player.hideoutCleared;
+  html+=questCard('Clear the Pirate Hideout', hideoutDone?'Complete':(player.hideoutUnlocked?'In Progress':'Locked'), player.hideoutUnlocked||hideoutDone?'Land at the hideout, defeat every hostile, and breach the command vault. The hideout does not respawn after it is cleared.':'Complete the Pirate Key Hunt to reveal the hideout.', [
+    questStep(!!player.hideoutUnlocked||hideoutDone, 'Unlock the Pirate Hideout'),
+    questStep(hideoutDone, 'Defeat the hideout boss and breach the command vault')
+  ], hideoutDone?'complete':(!player.hideoutUnlocked?'locked':''));
+
+  el.innerHTML=html;
+}
+
 function renderManifest(){
   const rowsEl = document.getElementById('manifest-rows');
   const totalEl = document.getElementById('manifest-total');
@@ -3026,7 +3593,15 @@ function renderManifest(){
     return;
   }
   const batches = [10,20,50,100];
-  let rows = '';
+  const canCraftWater = (player.cargo.hydrogen||0) >= WATER_HYDROGEN_COST && (player.cargo.oxygen||0) >= WATER_OXYGEN_COST && cargoUsed()+WATER_OUTPUT <= cargoCapacity();
+  let rows = `<div class="upgrade-card" style="margin-bottom:14px;border-color:#24506a;">
+    <div class="upgrade-info">
+      <div class="u-name">Water Synthesis</div>
+      <div class="u-desc">Combine ${WATER_HYDROGEN_COST} Hydrogen Gas + ${WATER_OXYGEN_COST} Oxygen Gas → ${WATER_OUTPUT} Water.</div>
+      <div class="u-lvl">H₂: ${player.cargo.hydrogen||0} / ${WATER_HYDROGEN_COST} · O₂: ${player.cargo.oxygen||0} / ${WATER_OXYGEN_COST}</div>
+    </div>
+    <button class="upgrade-btn" style="border-color:#5fc9ff;color:#8fddff;" ${canCraftWater?'':'disabled'} onclick="craftWaterAndRefresh()">Craft ${WATER_OUTPUT}</button>
+  </div>`;
   entries.forEach(k=>{
     const qty = player.cargo[k];
     const mat = MATERIALS[k];
@@ -3064,19 +3639,24 @@ function updateOutpostCredits(){
   const el = document.getElementById('outpost-credits-txt');
   if(el) el.textContent = Math.floor(player.credits).toLocaleString();
 }
+function currentRelaySellMultiplier(){ return zone==='nebula' ? 0.90 : OUTPOST_SELL_MULT; }
 function renderOutpostSell(){
   const el = document.getElementById('outpost-sell');
+  const label = el && el.previousElementSibling;
+  if(label) label.innerHTML = zone==='nebula'
+    ? 'Sell Cargo <span style="color:var(--text-dim);text-transform:none;">(nebula relay rates — 10% under market)</span>'
+    : 'Sell Cargo <span style="color:var(--text-dim);text-transform:none;">(fence rates — 20% under market)</span>';
   const entries = MAT_KEYS.filter(k=>player.cargo[k]>0);
   let total = 0;
   if(entries.length===0){
     el.innerHTML = '<div class="empty-note">Cargo hold is empty.</div>';
     return;
   }
-  let rows = '';
+  let rows = `<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Civilian standing: ${civilianTier().name} · Ceres bonus ${Math.round((civilianTier().sell-1)*100)}%</div></div>`;
   entries.forEach(k=>{
     const qty = player.cargo[k];
     const mat = MATERIALS[k];
-    const val = Math.round(qty*effectivePrice(k)*OUTPOST_SELL_MULT);
+    const val = Math.round(qty*effectivePrice(k)*currentRelaySellMultiplier());
     total += val;
     rows += `<div class="cargo-row">
       <span class="cargo-name"><span class="swatch" style="background:${mat.color}"></span>${mat.name} <span style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;">(${mat.symbol})</span></span>
@@ -3090,7 +3670,7 @@ function sellAllOutpost(){
   let total = 0, units = 0;
   MAT_KEYS.forEach(k=>{
     if(player.cargo[k]>0){
-      total += Math.round(player.cargo[k]*effectivePrice(k)*OUTPOST_SELL_MULT);
+      total += Math.round(player.cargo[k]*effectivePrice(k)*currentRelaySellMultiplier());
       units += player.cargo[k];
       player.cargo[k] = 0;
     }
@@ -3108,29 +3688,37 @@ function sellAllOutpost(){
 }
 function renderOutpostMissiles(){
   const el = document.getElementById('outpost-missiles');
-  if(!player.hasMissileLauncher){
-    el.innerHTML = '';
-    return;
-  }
+  if(!player.hasMissileLauncher){ el.innerHTML = ''; return; }
   const shipAffordable = player.credits >= OUTPOST_MISSILE_COST && canAddShipMissiles(MISSILE_BATCH_SIZE);
   const dmmAffordable = player.credits >= OUTPOST_DMM_COST && canAddDMM(1);
-  el.innerHTML = `<div class="label-row" style="margin-bottom:8px;">Missile Resupply <span style="color:var(--text-dim);text-transform:none;">(marked up out here)</span></div>
-    <div class="upgrade-card" style="border-color:#4a3220;">
+  const tradeReady = player.missileAmmo >= DMM_TRADE_MISSILES && player.credits >= DMM_TRADE_CREDITS && player.dmmAmmo < DMM_MAX_COUNT;
+  el.innerHTML = `<div class="label-row" style="margin-bottom:8px;">Ordnance Exchange <span style="color:var(--text-dim);text-transform:none;">buy · sell · trade · jettison</span></div>
+    <div class="upgrade-card" style="border-color:#4a3220;align-items:flex-start;">
       <div class="upgrade-info">
         <div class="u-name">Ship Missiles</div>
-        <div class="u-desc">On hand: ${player.missileAmmo}</div>
+        <div class="u-desc">On hand: ${player.missileAmmo} · Bay use: ${missileSlotsUsed()} / ${MISSILE_MAX_AMMO} slots</div>
+        <div class="u-lvl">Fence buys for ${OUTPOST_MISSILE_SELL_PRICE} cr each.</div>
       </div>
-      <button class="upgrade-btn" style="border-color:var(--amber);color:var(--amber);" ${shipAffordable?'':'disabled'}
-        onmousedown="startHoldRepeat(buyMissilesOutpost)" ontouchstart="startHoldRepeat(buyMissilesOutpost)">${MISSILE_BATCH_SIZE} for ${OUTPOST_MISSILE_COST.toLocaleString()} cr</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:350px;">
+        <button class="upgrade-btn" style="border-color:var(--amber);color:var(--amber);" ${shipAffordable?'':'disabled'} onclick="buyMissilesOutpost()">Buy 5 · ${OUTPOST_MISSILE_COST} cr</button>
+        <button class="upgrade-btn" ${player.missileAmmo>=1?'':'disabled'} onclick="sellShipMissilesOutpost(1)">Sell 1</button>
+        <button class="upgrade-btn" ${player.missileAmmo>=5?'':'disabled'} onclick="sellShipMissilesOutpost(5)">Sell 5</button>
+        <button class="upgrade-btn" ${player.missileAmmo>=1?'':'disabled'} onclick="jettisonShipMissiles(1)">Drop 1</button>
+        <button class="upgrade-btn" ${player.missileAmmo>=5?'':'disabled'} onclick="jettisonShipMissiles(5)">Drop 5</button>
+      </div>
     </div>
-    <div class="upgrade-card" style="border-color:#4a3220;margin-top:10px;">
+    <div class="upgrade-card" style="border-color:#4a3220;margin-top:10px;align-items:flex-start;">
       <div class="upgrade-info">
-        <div class="u-name">Dark Matter Missile <span style="color:var(--text-dim);font-size:11px;">rare stock</span></div>
-        <div class="u-desc">Deals ${(DMM_DAMAGE_PCT*100).toFixed(0)}% of a Dark Matter fragment's HP per hit. Takes 10 bay slots — max ${DMM_MAX_COUNT} carried.</div>
-        <div class="u-lvl">On hand: ${player.dmmAmmo} / ${DMM_MAX_COUNT}</div>
+        <div class="u-name">Dark Matter Missiles <span style="color:var(--text-dim);font-size:11px;">rare stock</span></div>
+        <div class="u-desc">Takes ${DMM_WEIGHT} bay slots each. On hand: ${player.dmmAmmo} / ${DMM_MAX_COUNT}</div>
+        <div class="u-lvl">Trade ${DMM_TRADE_MISSILES} ship missiles + ${DMM_TRADE_CREDITS.toLocaleString()} cr for 1 DMM.</div>
       </div>
-      <button class="upgrade-btn" style="border-color:#a855f7;color:#d9b8ff;" ${dmmAffordable?'':'disabled'}
-        onmousedown="startHoldRepeat(buyDMMOutpost)" ontouchstart="startHoldRepeat(buyDMMOutpost)">1 for ${OUTPOST_DMM_COST.toLocaleString()} cr</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:390px;">
+        <button class="upgrade-btn" style="border-color:#a855f7;color:#d9b8ff;" ${dmmAffordable?'':'disabled'} onclick="buyDMMOutpost()">Buy 1 · ${OUTPOST_DMM_COST.toLocaleString()} cr</button>
+        <button class="upgrade-btn" style="border-color:#a855f7;color:#d9b8ff;" ${tradeReady?'':'disabled'} onclick="tradeShipMissilesForDMM()">Trade for 1</button>
+        <button class="upgrade-btn" ${player.dmmAmmo>=1?'':'disabled'} onclick="sellDMMOutpost()">Sell 1</button>
+        <button class="upgrade-btn" ${player.dmmAmmo>=1?'':'disabled'} onclick="jettisonDMM()">Drop 1</button>
+      </div>
     </div>`;
 }
 function buyMissilesOutpost(){
@@ -3157,6 +3745,51 @@ function buyDMMOutpost(){
   updateOutpostCredits();
   saveGame();
 }
+function refreshOrdnanceUI(){
+  renderOutpostMissiles();
+  renderUpgradesTab();
+  updateHUD();
+  updateOutpostCredits();
+  updateStationCredits();
+  saveGame();
+}
+function sellShipMissilesOutpost(qty){
+  qty = Math.min(qty, player.missileAmmo);
+  if(qty<=0) return;
+  player.missileAmmo -= qty;
+  const payout = qty * OUTPOST_MISSILE_SELL_PRICE;
+  player.credits += payout;
+  toast(`Sold ${qty} missile${qty===1?'':'s'} for ${payout.toLocaleString()} credits.`);
+  sfxSell(); refreshOrdnanceUI();
+}
+function jettisonShipMissiles(qty){
+  qty = Math.min(qty, player.missileAmmo);
+  if(qty<=0) return;
+  player.missileAmmo -= qty;
+  toast(`Jettisoned ${qty} ship missile${qty===1?'':'s'}.`, 'warn');
+  sfxClick(); refreshOrdnanceUI();
+}
+function tradeShipMissilesForDMM(){
+  if(player.missileAmmo < DMM_TRADE_MISSILES || player.credits < DMM_TRADE_CREDITS || player.dmmAmmo >= DMM_MAX_COUNT) return;
+  player.missileAmmo -= DMM_TRADE_MISSILES;
+  player.credits -= DMM_TRADE_CREDITS;
+  player.dmmAmmo++;
+  toast(`Traded ${DMM_TRADE_MISSILES} ship missiles for 1 Dark Matter Missile.`, 'levelup');
+  sfxSell(); refreshOrdnanceUI();
+}
+function sellDMMOutpost(){
+  if(player.dmmAmmo<=0) return;
+  player.dmmAmmo--;
+  player.credits += OUTPOST_DMM_SELL_PRICE;
+  toast(`Sold 1 Dark Matter Missile for ${OUTPOST_DMM_SELL_PRICE.toLocaleString()} credits.`);
+  sfxSell(); refreshOrdnanceUI();
+}
+function jettisonDMM(){
+  if(player.dmmAmmo<=0) return;
+  player.dmmAmmo--;
+  toast('Jettisoned 1 Dark Matter Missile.', 'warn');
+  sfxClick(); refreshOrdnanceUI();
+}
 
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
@@ -3168,6 +3801,8 @@ function effectivePrice(matKey){
   const mat = MATERIALS[matKey];
   let price = mat.price;
   if(mat.ingot) price *= (1 + roleBonusPct('metallurgist'));
+  price *= marketMultiplier(matKey);
+  if(zone==='normal') price *= civilianTier().sell;
   return price;
 }
 function renderSellTab(){
@@ -3178,7 +3813,7 @@ function renderSellTab(){
     el.innerHTML = '<div class="empty-note">Cargo hold is empty. Go mine some asteroids.</div>';
     return;
   }
-  let rows = '';
+  let rows = `<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Civilian standing: ${civilianTier().name} · Ceres bonus ${Math.round((civilianTier().sell-1)*100)}%</div></div>`;
   entries.forEach(k=>{
     const qty = player.cargo[k];
     const mat = MATERIALS[k];
@@ -3195,6 +3830,14 @@ function renderSellTab(){
 function smeltAndRefresh(oreKey, amount){
   if(smeltOre(oreKey, amount)){
     renderManifest();
+    updateHUD();
+    saveGame();
+  }
+}
+function craftWaterAndRefresh(){
+  if(craftWater()){
+    renderManifest();
+    renderSellTab();
     updateHUD();
     saveGame();
   }
@@ -3229,7 +3872,7 @@ const UPGRADES = [
   {key:'energyLevel', name:'Energy Cell', desc:'Expands energy capacity and passive recharge rate for your laser and tractor beam.',
     cost:l=>Math.round(210*Math.pow(l,1.55)), stat:()=>`Capacity: ${energyMax()} · Regen: ${energyRegen().toFixed(1)}/s`},
   {key:'tractorLevel', name:'Tractor Beam', maxLevel:()=> player.factionPerks.tractorOvercharge ? 6 : 4,
-    desc:l=> l===0 ? 'Installs a beam (hold SHIFT/CTRL) that pulls loose ore toward your ship.' : 'Increases beam range and pull strength.',
+    desc:l=> l===0 ? 'Installs a beam (hold SHIFT) that pulls loose ore toward your ship.' : 'Increases beam range and pull strength.',
     cost:l=>Math.round(260*Math.pow(l+1,1.55)),
     stat:()=> player.tractorLevel===0 ? 'Not installed' : `Range: ${tractorRange()}m · Pull: ${tractorStrength()}`},
   {key:'shieldLevel', name:'Deflector Shield', maxLevel:()=> player.factionPerks.shieldOvercharge ? 6 : 4,
@@ -3263,7 +3906,7 @@ function renderUpgradesTab(){
   } else {
     missileCard.innerHTML = `<div class="upgrade-info">
         <div class="u-name">Missile Battery</div>
-        <div class="u-desc">Fire with Z — the launcher auto-detects the nearest threat and picks the right ordnance. Ammo is salvaged from destroyed ships or bought at the Black Market Relay in the Deep Zone — Ceres doesn't stock military hardware.</div>
+        <div class="u-desc">Fire with Z — the launcher auto-detects the nearest threat and picks the right ordnance. Ammo is salvaged from destroyed ships or managed at the Black Market Relay in the Deep Zone. The relay buys, trades, and jettisons excess ordnance — Ceres doesn't handle military hardware.</div>
         <div class="u-lvl">Ship Missiles: ${player.missileAmmo} · Dark Matter Missiles: ${player.dmmAmmo} / ${DMM_MAX_COUNT}</div>
         <div class="u-lvl">Damage: ${missileDamage().toFixed(0)} · DMM: ${(DMM_DAMAGE_PCT*100).toFixed(0)}% of target HP · Reload: ${missileCooldownTime().toFixed(1)}s</div>
       </div>
@@ -3324,13 +3967,13 @@ function renderUpgradesTab(){
       const canAfford = player.credits >= RAM_SCOOP_COST;
       scoopCard.innerHTML = `<div class="upgrade-info">
           <div class="u-name">Ram Scoop <span style="color:var(--text-dim);font-size:11px;">Not Installed</span></div>
-          <div class="u-desc">Mounts twin collector pylons to your hull. Hold SHIFT/CTRL near a gas cloud in the Nebula to draw gas into your hold — same control as the Tractor Beam.</div>
+          <div class="u-desc">Mounts twin collector pylons to your hull. Hold SHIFT near a gas cloud in the Nebula to draw gas into your hold — same control as the Tractor Beam.</div>
         </div>
         <button class="upgrade-btn" ${canAfford?'':'disabled'} onclick="buyRamScoop()">${RAM_SCOOP_COST.toLocaleString()} cr</button>`;
     } else {
       scoopCard.innerHTML = `<div class="upgrade-info">
           <div class="u-name">Ram Scoop</div>
-          <div class="u-desc">Installed. Hold SHIFT/CTRL near a gas cloud in the Nebula to extract gas.</div>
+          <div class="u-desc">Installed. Hold SHIFT near a gas cloud in the Nebula to extract gas.</div>
         </div>
         <button class="upgrade-btn" disabled>Installed</button>`;
     }
@@ -3432,7 +4075,7 @@ function buyRamScoop(){
   player.credits -= RAM_SCOOP_COST;
   player.hasRamScoop = true;
   if(player.gasTankLevel < 1) player.gasTankLevel = 1; // ships with a starter tank so it works out of the box
-  toast('Ram Scoop installed — hold SHIFT/CTRL near a gas cloud in the Nebula to collect.', 'levelup');
+  toast('Ram Scoop installed — hold SHIFT near a gas cloud in the Nebula to collect.', 'levelup');
   sfxLevelUp();
   renderUpgradesTab();
   updateStationCredits();
@@ -3481,6 +4124,14 @@ function renderCrewTab(){
     });
     html += '</div>';
   }
+  migrateCrewEquipment();
+  if(crew.length){
+    html += `<div class="armory-wrap"><div class="label-row">Crew Armory</div><div class="armory-toolbar"><strong style="color:var(--amber)">Upgrade Points: ${player.upgradePoints||0} / ${EQUIPMENT_UPGRADE_COST}</strong><button onclick="autoEquipBest()">Best Equipment Config</button><button onclick="unequipAll()">Unequip All</button><span style="font-size:9px;color:var(--text-dim)">Drag equipment between crew and Armory. Max upgrade +5.</span></div><div class="crew-loadout-grid">`;
+    crew.forEach((c,ci)=>{html+=`<div class="loadout-card"><div class="loadout-name">${c.name} · ${ROLES[c.role].name}</div><div class="loadout-hp">Starting HP ${crewBaseHp(c)} · Equipped HP ${crewMaxHp(c)}</div>`;for(const slot of ['armor','melee','ranged','special'])html+=`<div class="equip-row"><div class="equip-label">${slot}</div><div class="equip-slot" ondragover="gearOver(event)" ondragleave="gearLeave(event)" ondrop="dropOnCrew(event,${ci},'${slot}')">${gearHtml(c.equipment[slot],'crew',ci,slot)}</div></div>`;html+='</div>';});
+    html += `</div><div class="label-row" style="margin-top:14px">Armory ${armory.length}/${ARMORY_CAPACITY}</div><div class="armory-grid">`;
+    for(let i=0;i<ARMORY_CAPACITY;i++)html+=`<div class="armory-slot" ondragover="gearOver(event)" ondragleave="gearLeave(event)" ondrop="dropOnArmory(event)">${gearHtml(armory[i],'armory',i,'')}</div>`;
+    html += `</div><div style="font-size:9px;color:var(--text-dim);margin-top:8px">Armory full? New equipment is automatically recycled. +0 gear = 1 Upgrade Point; upgraded gear = 2. No selling, dropping, durability, or hoarding.</div></div>`;
+  }
   if(crew.length < MAX_CREW){
     const cost = Math.round(400 * Math.pow(crew.length+1, 1.5));
     const roleKeys = Object.keys(ROLES);
@@ -3511,7 +4162,7 @@ function hireCrew(){
   if(player.credits < cost) return;
   const hire = window._pendingHire;
   player.credits -= cost;
-  crew.push({name:hire.name, role:hire.role, level:1, xp:0});
+  const recruit={id:'crew'+Date.now().toString(36),name:hire.name, role:hire.role, level:1, xp:0,equipment:emptyEquipment()}; starterEquipment(recruit); crew.push(recruit);
   window._pendingHire = null;
   toast(`${hire.name} joined your crew as ${ROLES[hire.role].name}`);
   sfxLevelUp();
@@ -3534,6 +4185,10 @@ function renderFactionTab(){
   const goldQty = player.cargo['gold']||0;
 
   let html = '';
+
+  html += `<div class="upgrade-card" style="display:block;border-color:#4fe0d0;margin-bottom:12px"><div class="u-name">Civilian Reputation — ${civilianTier().name}</div><div class="u-desc">Rescues completed: ${player.civilianRep||0}. Ceres sell bonus: ${Math.round((civilianTier().sell-1)*100)}%.</div></div>`;
+  html += `<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Trade Market — ${currentMarket().name}</div><div class="u-desc">Prices shift as shortages, gluts, raids, and harvests move through the system.</div></div>`;
+  html += `<div class="upgrade-card" style="display:block;border-color:#a855f7;margin-bottom:12px"><div class="u-name">Pirate Key Hunt — ${keyPieceCount()}/${NAMED_PIRATES.length}</div><div class="u-desc" style="line-height:1.65;margin:8px 0">${hideoutProgressHtml()}</div>${player.hideoutCleared?'<div class="u-lvl" style="color:var(--cyan)">✓ Pirate Hideout permanently cleared · no respawns</div>':player.hideoutUnlocked?'<button class="upgrade-btn" onclick="openHideout()">Land at Pirate Hideout</button>':(allKeyPieces()?'<button class="upgrade-btn" '+((player.cargo.scrap_metal||0)>=HIDEOUT_SCRAP_COST?'':'disabled')+' onclick="maybeUnlockHideout();renderFactionTab()">Assemble Key + Pay 1,000 Scrap</button>':'<div class="u-lvl">Named pirates carry one unique key component each.</div>')}</div>`;
 
   // Frontier Trial quest tracker
   if(quest.completed){
