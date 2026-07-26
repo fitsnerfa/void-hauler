@@ -2,18 +2,18 @@
 
 ## Controls
 
-  Key                    Action
-  ---------------------- --------------------------
-  **W / ↑**              Thrust forward
-  **S / ↓**              Reverse thrust
-  **A / D** or **←/→**   Turn
-  **SPACE**              Fire Mining Laser
-  **SHIFT**              Tractor Beam / Ram Scoop
-  **Z**                  Fire Missile
-  **E**                  Dock / Activate Stargate
-  **I**                  Cargo Manifest
-  **J**                  Quest Journal
-  **ESC**                Close menus
+| Key | Action |
+| --- | --- |
+| **W / ↑** | Thrust forward |
+| **S / ↓** | Reverse thrust |
+| **A / D** or **←/→** | Turn |
+| **SPACE** | Fire Mining Laser |
+| **SHIFT** | Tractor Beam / Ram Scoop |
+| **Z** | Fire Missile |
+| **E** | Dock / Activate Stargate |
+| **I** | Cargo Manifest |
+| **J** | Quest Journal |
+| **ESC** | Close menus |
 
 > **Note:** CTRL is no longer used for the Tractor Beam.
 
@@ -23,8 +23,11 @@
 
 Press **J** to open the Quest Journal.
 
-The journal displays: - Active quests - Completed quests (✓) - Current
-objectives - Progress counters
+The journal displays: 
+- Active quests
+- Completed quests (✓)
+- Current objectives
+- Progress counters
 
 ------------------------------------------------------------------------
 
