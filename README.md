@@ -1,5 +1,5 @@
 # void-hauler-test
-VOID HAULER — Instruction Manual (v1.1)
+VOID HAULER — Comprehensive Instruction Manual (v1.1)
 A space mining, combat, and trading game. This manual covers every system in the current build.
 
 
