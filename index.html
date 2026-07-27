@@ -1,8 +1,15 @@
 <!DOCTYPE html>
+<!--
+VOID HAULER
+Copyright © 2026 Christopher Beason. All rights reserved.
+Unauthorized distribution, republication, sale, or modification of this game or its source code is prohibited without written permission from the copyright owner.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VOID HAULER v1.4.1 — Quest Journal</title>
+<meta name="author" content="Christopher Beason">
+<meta name="copyright" content="Copyright © 2026 Christopher Beason">
+<title>VOID HAULER v1.5.0 — Fortified Saves</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -149,6 +156,21 @@
   .close-btn{cursor:pointer;pointer-events:auto;background:none;border:1px solid var(--panel-edge);
     color:var(--text-dim);width:30px;height:30px;border-radius:3px;font-size:16px;}
   .close-btn:hover{border-color:var(--danger);color:var(--danger);}
+  /* Every scrollable menu keeps its title and close control visible. */
+  #outpost-panel>.station-head,#manifest-panel>.station-head,#quest-panel>.station-head,#hideout-panel>.station-head,#transfer-panel>.station-head{
+    position:sticky;top:0;z-index:8;background:#0d1522;box-shadow:0 4px 12px rgba(0,0,0,.35);}
+  #outpost-panel>.station-head{background:#1a140d;}
+  #hideout-panel>.station-head{background:#100d1a;}
+  #transfer-overlay{position:absolute;inset:0;background:rgba(3,5,9,.82);z-index:13;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(2px);}
+  #transfer-overlay.open{display:flex;}
+  #transfer-panel{width:min(780px,94vw);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#0d1522,#080d16);border:1px solid var(--cyan);border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.65),0 0 28px rgba(79,224,208,.12);}
+  .transfer-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .transfer-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
+  .transfer-actions button{padding:5px 7px;background:#101b29;border:1px solid var(--panel-edge);color:var(--cyan);font:10px 'JetBrains Mono',monospace;cursor:pointer;border-radius:3px;}
+  .transfer-actions button:hover{border-color:var(--cyan);background:var(--cyan-dim);}
+  .transfer-actions button:disabled{opacity:.35;cursor:not-allowed;}
+  .vessel-systems{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:10px;}
+  .vessel-system{border:1px solid var(--panel-edge);background:#0b1220;padding:9px;border-radius:3px;}
 
   .tabs{display:flex;gap:2px;padding:0 24px;border-bottom:1px solid var(--panel-edge);pointer-events:auto;}
   .tab{padding:10px 16px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);
@@ -217,6 +239,13 @@
   .gear-chip{width:100%;cursor:grab}.gear-name{font-size:10px;color:var(--text)}.gear-meta{font-size:9px;color:var(--amber);margin-top:2px}
   .armory-grid{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:7px}.armory-slot{min-height:52px}.armory-empty{font-size:9px;color:#526077;text-align:center;width:100%}
   .gear-actions{display:flex;gap:4px}.tiny-btn{border:1px solid #39465a;background:#101827;color:var(--text-dim);font-size:9px;padding:3px 5px;cursor:pointer;border-radius:2px}.tiny-btn:hover{color:var(--cyan);border-color:var(--cyan)}
+  .sell-select{display:flex;align-items:center;gap:9px;min-width:0;flex:1;cursor:pointer;}
+  .sell-select input{width:16px;height:16px;accent-color:var(--cyan);flex:0 0 auto;}
+  .cargo-row.quest-protected{border-left:3px solid var(--amber);padding-left:8px;background:rgba(242,161,84,.04);}
+  .quest-tag{font:9px 'JetBrains Mono',monospace;color:var(--amber);border:1px solid rgba(242,161,84,.45);padding:1px 5px;border-radius:2px;margin-left:7px;white-space:nowrap;}
+  .sell-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px;}
+  .sell-toolbar button{padding:7px 10px;background:#101827;border:1px solid var(--panel-edge);color:var(--text);font:10px 'JetBrains Mono',monospace;border-radius:3px;cursor:pointer;}
+  .sell-toolbar button:hover{border-color:var(--cyan);color:var(--cyan);}
   @media(max-width:700px){.armory-grid{grid-template-columns:repeat(2,1fr)}}
   #hideout-overlay{position:absolute;inset:0;background:rgba(2,3,7,.96);z-index:30;display:none;align-items:center;justify-content:center;padding:18px;}
   #hideout-overlay.open{display:flex;}
@@ -279,7 +308,7 @@
   <div id="hud-bottom-left" class="hud panel">
     <div class="controls-hint">
       <b>W/↑</b> thrust &nbsp; <b>A/D</b> turn &nbsp; <b>SPACE</b> fire laser<br>
-      <b>E</b> dock / investigate signal &nbsp; <b>I</b> cargo &nbsp; <b>J</b> quests &nbsp; <b>ESC</b> close menu<br>
+      <b>E</b> dock / investigate signal &nbsp; <b>I</b> cargo &nbsp; <b>J</b> quests &nbsp; <b>T</b> transfer near contract vessel &nbsp; <b>ESC</b> close menu<br>
       <span id="tractor-hint" style="display:none;"><b>SHIFT</b> <span id="tractor-hint-txt">tractor beam</span></span>
       <span id="missile-hint" style="display:none;"><br><b>Z</b> fire missile <span id="missile-ammo-txt" class="mono">(0)</span></span>
     </div>
@@ -388,11 +417,48 @@
     </div>
   </div>
 
+  <div id="transfer-overlay">
+    <div id="transfer-panel">
+      <div class="station-head">
+        <div><h1>Contract Vessel Transfer</h1><div class="sub">Move ore, salvage, and gases between ships · press T or ✕ to close</div></div>
+        <button class="close-btn" onclick="closeTransfer()">✕</button>
+      </div>
+      <div style="padding:18px 24px 24px;">
+        <div id="transfer-summary"></div>
+        <div id="transfer-rows" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="recovery-overlay" style="display:none;position:absolute;inset:0;background:rgba(2,5,10,.94);z-index:500;overflow:auto;">
+    <div style="max-width:900px;margin:32px auto;border:1px solid var(--panel-edge);background:#080d16;box-shadow:0 0 40px rgba(0,0,0,.7);">
+      <div class="station-head">
+        <div><h1>Black Box Flight Recorder</h1><div class="sub">15 flight logs · lock up to 5 progression points permanently</div></div>
+        <button class="close-btn" onclick="closeRecoveryCenter()">✕</button>
+      </div>
+      <div style="padding:18px 24px 24px;">
+        <div id="recovery-list" class="mono"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--panel-edge);font-size:10px;color:var(--text-dim);line-height:1.6;">
+          Select a flight log and press RESTORE to resume from that exact point. Your current game is archived first. Up to five locked logs are never overwritten; unlocked logs rotate when the recorder reaches 15 entries.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="start-screen">
     <h1>VOID HAULER</h1>
-    <div style="color:var(--text-dim);font-size:11px;letter-spacing:.15em;margin:-4px 0 18px;font-family:'JetBrains Mono',monospace;">v1.4.1</div>
+    <div style="color:var(--text-dim);font-size:11px;letter-spacing:.15em;margin:-4px 0 18px;font-family:'JetBrains Mono',monospace;">v1.5.0</div>
     <p>Every asteroid starts out as plain gray rock — composition unknown. Distress beacons and wreck signals may also appear while you travel: investigate them for rescues and salvage, but beware of pirate traps. Blast one down through its fragments and you won't know what you're actually hauling until the smallest pieces crack open, so a single big rock might hide a mix of common ore and something far more valuable. Scoop up what spills out and haul it back to Ceres Anchorage to sell. Watch out for pirates hunting your cargo hold — fight them off or outrun them. Reinvest in your ship, hire crew, and build a mining operation from a single beat-up hauler.</p>
-    <button id="start-btn" onclick="startGame()">Launch</button>
+    <button id="start-btn" onclick="startGame()">Launch / Continue</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">
+      <button onclick="exportSave(event)" style="padding:8px 14px;background:#101827;border:1px solid var(--panel-edge);color:var(--cyan);border-radius:3px;cursor:pointer;font-family:'Chakra Petch',sans-serif;">Export Save</button>
+      <button onclick="document.getElementById('save-import-file').click()" style="padding:8px 14px;background:#101827;border:1px solid var(--panel-edge);color:var(--cyan);border-radius:3px;cursor:pointer;font-family:'Chakra Petch',sans-serif;">Import Save</button>
+      <button id="recovery-btn" onclick="openRecoveryCenter()" style="padding:8px 14px;background:#271810;border:1px solid var(--amber);color:var(--amber);border-radius:3px;cursor:pointer;font-family:'Chakra Petch',sans-serif;">Black Box</button>
+      <button onclick="exportAllSaves()" style="padding:8px 14px;background:#101827;border:1px solid var(--panel-edge);color:var(--cyan);border-radius:3px;cursor:pointer;font-family:'Chakra Petch',sans-serif;">Export All Saves</button>
+      <input id="save-import-file" type="file" accept="application/json,.json" style="display:none" onchange="importSaveFile(event)">
+    </div>
+    <div style="margin-top:14px;font-size:9px;color:var(--text-dim);letter-spacing:.05em;">© 2026 Christopher Beason. All rights reserved.</div>
+    <div id="save-status" class="mono" style="margin-top:10px;font-size:10px;color:var(--text-dim);">Browser save ready</div>
     <div id="reset-link" onclick="resetSave()">reset save data</div>
   </div>
 </div>
@@ -402,12 +468,19 @@
 const WORLD = 5000;
 const STATION = {x: 2500, y: 2500, dockRadius: 170};
 const STORAGE_KEY = 'ore:save';
+const STORAGE_BACKUP_KEY = 'ore:save:backup';
+const RECOVERY_PREFIX = 'ore:save:recovery:';
+const RECOVERY_SLOTS = 15;
+const MAX_LOCKED_RECOVERIES = 5;
+const RECOVERY_INTERVAL_MS = 5 * 60 * 1000;
+const QUICK_SAVE_INTERVAL_SECONDS = 120;
+const SAVE_FORMAT_VERSION = 3;
 const NAMED_PIRATES = [
-  {id:'rust_fang',name:'Rust Fang',piece:'Fang Shard',zone:'normal'},
-  {id:'black_tide',name:'Black Tide',piece:'Tide Cipher',zone:'deep'},
-  {id:'widowmaker',name:'Widowmaker',piece:'Widow Sigil',zone:'nebula'},
-  {id:'crimson_jackal',name:'Crimson Jackal',piece:'Jackal Tooth',zone:'deep'},
-  {id:'ghost_vega',name:'Ghost of Vega',piece:'Vega Prism',zone:'nebula'}
+  {id:'rust_fang',name:'Rust Fang',piece:'Fang Shard',zone:'normal',ship:'pirate',color:'#ff6b45',fill:'#4a1f16',bounty:2500,anchor:{x:900,y:4100}},
+  {id:'black_tide',name:'Black Tide',piece:'Tide Cipher',zone:'normal',ship:'pirate',color:'#3f8cff',fill:'#101d38',bounty:4000,anchor:{x:4200,y:3900}},
+  {id:'crimson_jackal',name:'Crimson Jackal',piece:'Jackal Tooth',zone:'deep',ship:'frigate',color:'#ff3d57',fill:'#46131b',bounty:6500,anchor:{x:1000,y:1000}},
+  {id:'widowmaker',name:'Widowmaker',piece:'Widow Sigil',zone:'deep',ship:'frigate',color:'#c45cff',fill:'#281238',bounty:8500,anchor:{x:4050,y:3950}},
+  {id:'ghost_vega',name:'Ghost of Vega',piece:'Vega Prism',zone:'nebula',ship:'corvette',color:'#e8e4ff',fill:'#25213d',bounty:12500,anchor:{x:4050,y:900}}
 ];
 const HIDEOUT_SCRAP_COST = 1000;
 const CIV_REP_TIERS = [
@@ -516,24 +589,47 @@ const FACTION_PERKS = [
     desc:'Raises your Deflector Shield upgrade cap from level 4 to level 6.'},
   {key:'darkMatterCharts', name:'Deep Space Charts', rankReq:3, fpCost:500,
     desc:'Permanently reveals both Dark Matter deposits on your radar, no matter the distance.'},
-  {key:'escortContract', name:'Escort Contract', rankReq:4, fpCost:900,
-    desc:'A faction gunship joins you permanently, trailing your ship and automatically engaging any pirate that gets close.'},
+  {key:'escortContract',name:'Contract Vessel Charter',rankReq:4,fpCost:900,
+    desc:'Legacy alternate unlock: charter the same support vessel normally awarded for completing the Frigate Bounty.'},
 ];
 function factionRankIndex(){
   let idx = 0;
   for(let i=0;i<FACTION_RANKS.length;i++){ if(player.factionPointsTotal >= FACTION_RANKS[i].threshold) idx = i; }
   return idx;
 }
-const ESCORT_DPS = 14;
 const ESCORT_RANGE = 550;
-const ESCORT_MINE_LEVEL = 25;       // escort can start mining asteroids at this level
-const ESCORT_COLLECT_LEVEL = 50;    // escort can start collecting ore chunks at this level
-const ESCORT_MINE_DPS = 9;
+const ESCORT_MINE_LEVEL = 25;       // Tier I certification and autonomous mining
+const ESCORT_COLLECT_LEVEL = 50;    // Tier II certification and autonomous collection
+const ESCORT_MAX_LEVEL = 150;
 const ESCORT_MINE_RANGE = 260;
 const ESCORT_COLLECT_RANGE = 260;
-const ESCORT_XP_SHARE = 0.5; // fraction of the player's XP gains the escort also earns
+const ESCORT_TRANSFER_RANGE = 145;
+const ESCORT_XP_SHARE = 0.5;
+const VESSEL_TIER_LEVELS = [0,25,50,75,100,150];
+const VESSEL_UPGRADE_COSTS = [0,120,240,420,700,1100];
+const VESSEL_SYSTEMS = {
+  laser:{name:'Mining Laser',desc:'Increases asteroid mining power and adds a larger laser emitter.'},
+  cargo:{name:'Cargo Hold',desc:'Adds visible side cargo pods and increases solid-material capacity.'},
+  gas:{name:'Gas Hold',desc:'Adds external gas cylinders for hydrogen, oxygen, and other gases.'},
+  engine:{name:'Engines',desc:'Improves follow speed and adds larger rear thrusters.'},
+  hull:{name:'Hull Plating',desc:'Adds visible armor plating and improves vessel durability.'}
+};
 function escortXpToNext(level){ return Math.round(25 * Math.pow(level, 1.15)); }
-function escortCargoCapacity(){ return player.escortCargoLevel>0 ? 20 + (player.escortCargoLevel-1)*15 : 0; }
+function vesselUpgrades(){
+  if(!player.contractVesselUpgrades) player.contractVesselUpgrades={laser:0,cargo:0,gas:0,engine:0,hull:0};
+  for(const k of Object.keys(VESSEL_SYSTEMS)) if(!Number.isFinite(player.contractVesselUpgrades[k])) player.contractVesselUpgrades[k]=0;
+  return player.contractVesselUpgrades;
+}
+function vesselCertification(){
+  const level=escort?.level||1; let tier=0;
+  for(let i=1;i<VESSEL_TIER_LEVELS.length;i++) if(level>=VESSEL_TIER_LEVELS[i]) tier=i;
+  return tier;
+}
+function escortCargoCapacity(){ const lvl=vesselUpgrades().cargo||0; return lvl>0 ? 20+lvl*25 : 0; }
+function escortGasCapacity(){ const lvl=vesselUpgrades().gas||0; return lvl>0 ? 15+lvl*20 : 0; }
+function escortMineDps(){ return 7+(vesselUpgrades().laser||0)*4; }
+function escortFollowSpeed(){ return 260+(vesselUpgrades().engine||0)*35; }
+function escortHullMax(){ return 80+(vesselUpgrades().hull||0)*35; }
 
 /* ============================= STATE ============================= */
 let canvas, ctx, W, H;
@@ -558,7 +654,8 @@ let player = {
   missileAmmo: 0,
   dmmAmmo: 0,
   hasSmelter: false,
-  escortCargoLevel: 0,
+  escortCargoLevel: 0, // legacy field retained for save compatibility
+  contractVesselUpgrades: {laser:0,cargo:0,gas:0,engine:0,hull:0},
   hasRamScoop: false,
   frigatesKilled: 0,
   nebulaQuestAccepted: false,
@@ -612,7 +709,7 @@ const CORVETTE_DPS = PIRATE_DPS * 2.2;
 const CORVETTE_BOUNTY_MULT = 5;
 const CORVETTE_TARGET_COUNT = 4;
 const CORVETTE_SCALE = 2.2; // visual/collision size multiplier vs a base pirate
-const SCRAP_DROP_MIN = 2, SCRAP_DROP_MAX = 5;
+const SCRAP_DROP_MIN = 10, SCRAP_DROP_MAX = 25;
 
 
 /* ============================= DISTRESS / SALVAGE ENCOUNTERS ============================= */
@@ -664,12 +761,12 @@ function buildWreckLoot(quality){
   const loot = {credits:0, cargo:{}, missiles:0, dmm:0};
   if(quality==='military'){
     loot.credits = 220 + Math.floor(Math.random()*360);
-    loot.cargo.scrap_metal = 3 + Math.floor(Math.random()*5);
+    loot.cargo.scrap_metal = 100 + Math.floor(Math.random()*101);
     if(Math.random()<0.75) loot.missiles = 1 + Math.floor(Math.random()*4);
     if(Math.random()<0.12) loot.dmm = 1;
   } else {
     loot.credits = 80 + Math.floor(Math.random()*190);
-    loot.cargo.scrap_metal = 2 + Math.floor(Math.random()*4);
+    loot.cargo.scrap_metal = 100 + Math.floor(Math.random()*101);
     const bonusPool = ['iron','copper','silver','gold','hydrogen','helium'];
     const mat = bonusPool[Math.floor(Math.random()*bonusPool.length)];
     loot.cargo[mat] = 1 + Math.floor(Math.random()*4);
@@ -998,6 +1095,10 @@ let shieldRegenCooldown = 0;
 let missileTrackTarget = null; // keeps the target-lock HUD visible briefly after a missile launch
 let missileTrackTimer = 0;
 let camera = {x:0,y:0};
+let edgeFlashTimer = 0;
+let edgeWarnCooldown = 0;
+let edgeFlashSides = {left:false,right:false,top:false,bottom:false};
+let darkMatterRespawnTimer = 0;
 
 /* ============================= DERIVED STATS ============================= */
 function roleBonusPct(role){
@@ -1159,7 +1260,7 @@ function teamAttack(){migrateCrewEquipment();let total=12;crew.forEach(c=>{total
 function conversionValue(it){return it&&it.level>0?2:1;}
 function convertItem(it,quiet=false){if(!it)return;const pts=conversionValue(it);player.upgradePoints=(player.upgradePoints||0)+pts;if(!quiet)toast(`${it.name}${it.level?' +'+it.level:''} recycled: +${pts} Upgrade Point${pts===1?'':'s'}.`,'levelup');}
 function addToArmory(it){if(armory.length<ARMORY_CAPACITY){armory.push(it);toast(`${it.name}${it.level?' +'+it.level:''} added to the Armory.`);return true;}convertItem(it);toast(`Armory full — ${it.name} was automatically recycled.`,'warn');return false;}
-function starterEquipment(c){if(!c.equipment)c.equipment=emptyEquipment();if(!c.equipment.armor)c.equipment.armor=makeItem('padded_suit');if(!c.equipment.melee)c.equipment.melee=makeItem('utility_knife');if(!c.equipment.ranged)c.equipment.ranged=makeItem('service_pistol');if(!c.equipment.special)c.equipment.special=makeItem((c.role==='gastech'||c.role==='metallurgist')?'scanner':'medkit');}
+function starterEquipment(c){if(!c.equipment)c.equipment=emptyEquipment();if(!c.equipment.melee)c.equipment.melee=makeItem('utility_knife');}
 function gearHtml(it,where,idx,slot){if(!it)return '<div class="armory-empty">Empty</div>';const lvl=it.level?` +${it.level}`:'';return `<div class="gear-chip" draggable="true" ondragstart="gearDrag(event,'${where}',${idx},'${slot||''}')"><div><div class="gear-name">${it.name}${lvl}</div><div class="gear-meta">${it.slot.toUpperCase()} · Power ${itemScore(it)}${it.effect?' · '+it.effect:''}</div></div>${where==='armory'?`<div class="gear-actions"><button class="tiny-btn" onclick="event.stopPropagation();upgradeArmoryItem(${idx})">UP</button><button class="tiny-btn" onclick="event.stopPropagation();recycleArmoryItem(${idx})">♻</button></div>`:''}</div>`;}
 let gearDragData=null;
 function gearDrag(e,where,idx,slot){gearDragData={where,idx,slot};e.dataTransfer.effectAllowed='move';}
@@ -1172,73 +1273,301 @@ function recycleArmoryItem(i){const it=armory.splice(i,1)[0];convertItem(it);ren
 function upgradeArmoryItem(i){const it=armory[i];if(!it)return;if(it.level>=EQUIPMENT_MAX_LEVEL){toast('That item is already +5.','warn');return;}if((player.upgradePoints||0)<EQUIPMENT_UPGRADE_COST){toast(`Need ${EQUIPMENT_UPGRADE_COST} Upgrade Points.`,'warn');return;}player.upgradePoints-=EQUIPMENT_UPGRADE_COST;it.level++;toast(`${it.name} upgraded to +${it.level}!`,'levelup');renderCrewTab();saveGame();}
 function unequipAll(){migrateCrewEquipment();crew.forEach(c=>['armor','melee','ranged','special'].forEach(slot=>{const it=c.equipment[slot];if(it){c.equipment[slot]=null;addToArmory(it);}}));renderCrewTab();saveGame();}
 function autoEquipBest(){migrateCrewEquipment();const all=[...armory];armory=[];crew.forEach(c=>['armor','melee','ranged','special'].forEach(slot=>{if(c.equipment[slot])all.push(c.equipment[slot]);c.equipment[slot]=null;}));for(const slot of ['armor','melee','ranged','special']){const pool=all.filter(x=>x.slot===slot).sort((a,b)=>itemScore(b)-itemScore(a));crew.forEach((c,i)=>{if(pool[i])c.equipment[slot]=pool[i];});const used=new Set(crew.map(c=>c.equipment[slot]?.uid).filter(Boolean));for(const it of pool)if(!used.has(it.uid))armory.push(it);}while(armory.length>ARMORY_CAPACITY)convertItem(armory.pop(),true);toast('Best Equipment Config applied.','levelup');renderCrewTab();saveGame();}
-function randomEquipment(isBoss=false){const common=['security_armor','pirate_armor','shock_baton','boarding_axe','smg','pulse_rifle','medkit','scanner','shield_belt'];const boss=['black_tide_armor','rust_fang_axe','vega_rifle','widow_scanner'];return makeItem((isBoss?boss:common)[Math.floor(Math.random()*(isBoss?boss:common).length)],isBoss?2:(Math.random()<.12?1:0));}
+function equipmentRareChance(){return Math.min(.22,.12+Math.floor(Math.max(0,(player.level||1)-1)/3)*.02);}
+function randomEquipment(isBoss=false){const common=['security_armor','pirate_armor','shock_baton','boarding_axe','smg','pulse_rifle','medkit','scanner','shield_belt'];const boss=['black_tide_armor','rust_fang_axe','vega_rifle','widow_scanner'];return makeItem((isBoss?boss:common)[Math.floor(Math.random()*(isBoss?boss:common).length)],isBoss?2:(Math.random()<equipmentRareChance()?1:0));}
 
 /* ============================= SAVE / LOAD ============================= */
 let saveFailCount = 0;
 let saveDisabledUntil = 0;
+let lastSaveTime = null;
+let gameSessionReady = false;
+let lastRecoveryAt = 0;
 function hasClaudeStorage(){
   return typeof window !== 'undefined' && window.storage && typeof window.storage.set === 'function';
 }
-async function saveGame(){
-  const now = performance.now();
-  if(now < saveDisabledUntil) return;
-  const escortSave = escort ? {level:escort.level, xp:escort.xp, cargo:escort.cargo} : null;
-  const data = {player, crew, armory, quest, zone, escort: escortSave, distressTimer};
+function setSaveStatus(message, ok=true){
+  const el = document.getElementById('save-status');
+  if(!el) return;
+  el.textContent = message;
+  el.style.color = ok ? 'var(--cyan)' : 'var(--danger)';
+}
+function buildSaveData(){
+  const escortSave = escort ? {level:escort.level,xp:escort.xp,cargo:escort.cargo,gas:escort.gas||{},hp:escort.hp} : null;
+  return {
+    formatVersion:SAVE_FORMAT_VERSION,
+    gameVersion:'1.5.0',
+    savedAt:new Date().toISOString(),
+    player, crew, armory, quest, zone,
+    escort:escortSave,
+    distressTimer
+  };
+}
+async function storageGet(key){
+  if(hasClaudeStorage()){
+    const res = await window.storage.get(key, false).catch(()=>null);
+    return res && res.value ? res.value : null;
+  }
+  return localStorage.getItem(key);
+}
+async function storageSet(key,value){
+  if(hasClaudeStorage()) return window.storage.set(key,value,false);
+  localStorage.setItem(key,value);
+}
+async function storageDelete(key){
+  if(hasClaudeStorage()) return window.storage.delete(key,false).catch(()=>{});
+  localStorage.removeItem(key);
+}
+function saveSummary(raw,label='Save'){
   try{
-    if(hasClaudeStorage()){
-      const result = await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
-      if(result){ saveFailCount = 0; }
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      saveFailCount = 0;
-    }
+    const d=JSON.parse(raw), p=d.player||{};
+    const when=d.savedAt?new Date(d.savedAt):null;
+    return {
+      valid:!!d.player,
+      label,
+      level:Number(p.level||1),
+      credits:Number(p.credits||0),
+      fp:Number((p.factionPoints??p.fp) || 0),
+      vesselLevel:Number((d.escort&&d.escort.level)||0),
+      savedAt:when&&!Number.isNaN(when.getTime())?when:null,
+      gameVersion:d.gameVersion||'Legacy'
+    };
+  }catch(e){ return {valid:false,label}; }
+}
+function isMeaningfulSave(raw){
+  const x=saveSummary(raw);
+  return x.valid && (x.level>1 || x.credits>0 || x.vesselLevel>0 || raw.length>3000);
+}
+async function archiveRawSave(raw,reason='automatic recovery',locked=false){
+  if(!raw || !isMeaningfulSave(raw)) return false;
+  const records=[];
+  for(let i=0;i<RECOVERY_SLOTS;i++){
+    const stored=await storageGet(RECOVERY_PREFIX+i);
+    if(!stored) continue;
+    const item=await unwrapRecovery(stored);
+    if(item&&item.raw) records.push({raw:item.raw,meta:item.meta||{}});
+  }
+  if(records.some(r=>r.raw===raw)) return false;
+  const lockedCount=records.filter(r=>r.meta&&r.meta.locked).length;
+  if(locked && lockedCount>=MAX_LOCKED_RECOVERIES){
+    alert('Maximum Progression Locks Reached\n\nYou may only keep 5 locked flight logs.\nUnlock one before locking another save.');
+    return false;
+  }
+  records.unshift({raw,meta:{reason,archivedAt:new Date().toISOString(),summary:saveSummary(raw),locked:!!locked}});
+  const keepLocked=records.filter(r=>r.meta&&r.meta.locked).slice(0,MAX_LOCKED_RECOVERIES);
+  const keepUnlocked=records.filter(r=>!(r.meta&&r.meta.locked)).slice(0,RECOVERY_SLOTS-keepLocked.length);
+  const kept=[];
+  for(const r of records){
+    if(kept.length>=RECOVERY_SLOTS) break;
+    if((r.meta&&r.meta.locked ? keepLocked : keepUnlocked).includes(r) && !kept.includes(r)) kept.push(r);
+  }
+  for(let i=0;i<RECOVERY_SLOTS;i++){
+    const r=kept[i];
+    if(r) await storageSet(RECOVERY_PREFIX+i,JSON.stringify({recoveryMeta:r.meta,save:r.raw}));
+    else await storageDelete(RECOVERY_PREFIX+i);
+  }
+  await storageSet(STORAGE_BACKUP_KEY,raw);
+  lastRecoveryAt=Date.now();
+  return true;
+}
+async function unwrapRecovery(raw){
+  if(!raw) return null;
+  try{
+    const obj=JSON.parse(raw);
+    if(obj && typeof obj.save==='string') return {raw:obj.save,meta:obj.recoveryMeta||{}};
+  }catch(e){}
+  return {raw,meta:{reason:'legacy backup'}};
+}
+async function writePrimarySave(raw,{archive=false,reason='save'}={}){
+  const existing=await storageGet(STORAGE_KEY);
+  if(archive && existing && existing!==raw) await archiveRawSave(existing,reason);
+  await storageSet(STORAGE_KEY,raw);
+}
+async function readRawSave(){ return storageGet(STORAGE_KEY); }
+async function getRecoveryEntries(){
+  const out=[];
+  const primary=await readRawSave();
+  if(primary) out.push({key:STORAGE_KEY,raw:primary,meta:{reason:'Current browser save'},primary:true});
+  for(let i=0;i<RECOVERY_SLOTS;i++){
+    const stored=await storageGet(RECOVERY_PREFIX+i);
+    const item=await unwrapRecovery(stored);
+    if(item&&item.raw) out.push({key:RECOVERY_PREFIX+i,raw:item.raw,meta:item.meta,index:i});
+  }
+  const legacy=await storageGet(STORAGE_BACKUP_KEY);
+  if(legacy && !out.some(x=>x.raw===legacy)) out.push({key:STORAGE_BACKUP_KEY,raw:legacy,meta:{reason:'Legacy emergency backup'}});
+  return out;
+}
+async function checkBackupAvailability(){
+  try{
+    const entries=await getRecoveryEntries();
+    const valid=entries.filter(x=>saveSummary(x.raw).valid);
+    if(!valid.length){ setSaveStatus('No browser save found — new game is safe'); return; }
+    const cur=valid.find(x=>x.primary), sum=saveSummary((cur||valid[0]).raw);
+    setSaveStatus(`${valid.length} save${valid.length===1?'':'s'} available · Level ${sum.level}${sum.savedAt?' · '+sum.savedAt.toLocaleString():''}`);
+  }catch(e){ setSaveStatus('Could not inspect browser saves',false); }
+}
+function recoveryCard(entry,i){
+  const x=saveSummary(entry.raw,entry.primary?'CURRENT FLIGHT':`FLIGHT LOG ${i}`);
+  const reason=entry.meta&&entry.meta.reason?entry.meta.reason:'Flight recorder snapshot';
+  const locked=!!(entry.meta&&entry.meta.locked);
+  if(!x.valid) return `<div style="border:1px solid var(--danger);padding:12px;margin:8px 0;color:var(--danger);">Invalid save data · <button class="tiny-btn" onclick="downloadRecovery(${i})">EXPORT RAW</button></div>`;
+  return `<div style="border:1px solid ${entry.primary?'var(--cyan)':(locked?'var(--amber)':'var(--panel-edge)')};padding:14px;margin:10px 0;background:#0b1220;">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+      <div><div style="color:${entry.primary?'var(--cyan)':'var(--amber)'};font-size:13px;font-weight:700;">${entry.primary?'CURRENT FLIGHT':(locked?'🔒 LOCKED FLIGHT LOG':'FLIGHT LOG')}</div>
+      <div style="margin-top:6px;color:var(--text);">Level ${x.level} · ${x.credits.toLocaleString()} credits · Contract Vessel Lv.${x.vesselLevel||0}</div>
+      <div style="margin-top:4px;font-size:10px;color:var(--text-dim);">${x.savedAt?x.savedAt.toLocaleString():'Unknown date'} · v${x.gameVersion} · ${reason}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${entry.primary?'':`<label style="font-size:10px;color:${locked?'var(--amber)':'var(--text-dim)'};cursor:pointer;"><input type="checkbox" ${locked?'checked':''} onchange="toggleRecoveryLock(${i},this.checked)"> PROGRESSION LOCK</label>`}<button class="tiny-btn" onclick="downloadRecovery(${i})">EXPORT</button><button class="tiny-btn" onclick="viewRecoveryRaw(${i})">VIEW RAW</button>${entry.primary?'':`<button class="tiny-btn" onclick="restoreRecovery(${i})">RESTORE</button>`}</div>
+    </div></div>`;
+}
+async function toggleRecoveryLock(i,wantsLock){
+  const e=recoveryCache[i]; if(!e||e.primary)return;
+  const lockedCount=recoveryCache.filter(x=>!x.primary&&x.meta&&x.meta.locked).length;
+  if(wantsLock && lockedCount>=MAX_LOCKED_RECOVERIES){
+    alert('Maximum Progression Locks Reached\n\nYou may only keep 5 locked flight logs.\nUnlock one before locking another save.');
+    await openRecoveryCenter(); return;
+  }
+  e.meta=e.meta||{}; e.meta.locked=!!wantsLock;
+  await storageSet(e.key,JSON.stringify({recoveryMeta:e.meta,save:e.raw}));
+  toast(wantsLock?'Flight log locked. It will never be overwritten.':'Flight log unlocked. It can rotate normally.',wantsLock?'levelup':'');
+  await openRecoveryCenter();
+}
+let recoveryCache=[];
+async function openRecoveryCenter(){
+  const overlay=document.getElementById('recovery-overlay'), list=document.getElementById('recovery-list');
+  overlay.style.display='block'; list.innerHTML='Scanning browser storage…';
+  recoveryCache=await getRecoveryEntries();
+  if(!recoveryCache.length){ list.innerHTML='<div style="padding:20px;border:1px solid var(--panel-edge);">No saves or recovery snapshots were found for this exact browser location.</div>'; return; }
+  list.innerHTML=recoveryCache.map(recoveryCard).join('');
+}
+function closeRecoveryCenter(){ document.getElementById('recovery-overlay').style.display='none'; }
+function downloadRaw(raw,name){
+  if(typeof raw!=='string'||!raw.length) throw new Error('There is no save data to export.');
+  const blob=new Blob([raw],{type:'application/json;charset=utf-8'});
+  if(window.navigator && typeof window.navigator.msSaveOrOpenBlob==='function'){
+    window.navigator.msSaveOrOpenBlob(blob,name);
+    return true;
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=name;
+  a.rel='noopener';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+  setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },60000);
+  return true;
+}
+function downloadRecovery(i){
+  const e=recoveryCache[i]; if(!e)return;
+  const x=saveSummary(e.raw), stamp=(x.savedAt||new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
+  downloadRaw(e.raw,`void-hauler-${e.primary?'current':'recovery'}-L${x.level}-${stamp}.json`);
+}
+function viewRecoveryRaw(i){
+  const e=recoveryCache[i]; if(!e)return;
+  const w=window.open('','_blank');
+  if(!w){ alert('Your browser blocked the raw-save window. Use Export instead.'); return; }
+  w.document.write('<title>VOID HAULER Raw Save</title><textarea style="width:98vw;height:96vh;font:12px monospace;">'+e.raw.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>');
+  w.document.close();
+}
+async function restoreRecovery(i){
+  const e=recoveryCache[i]; if(!e||e.primary)return;
+  const x=saveSummary(e.raw);
+  if(!confirm(`Restore Level ${x.level} flight log from ${x.savedAt?x.savedAt.toLocaleString():'unknown date'}?\n\nYour current timeline will be archived first so you can return to it.`))return;
+  const current=await readRawSave();
+  if(current) await archiveRawSave(current,'Before recovery restore');
+  await storageSet(STORAGE_KEY,e.raw);
+  alert('Flight log restored. The game will reload now.'); location.reload();
+}
+async function saveGame(showNotice=false,snapshotReason=null){
+  if(!gameSessionReady){
+    if(showNotice) toast('Save blocked until the game finishes loading.','warn');
+    return false;
+  }
+  const now=performance.now(); if(now<saveDisabledUntil)return false;
+  try{
+    const raw=JSON.stringify(buildSaveData()), existing=await readRawSave();
+    if(snapshotReason && existing) await archiveRawSave(existing,snapshotReason);
+    else if(existing && Date.now()-lastRecoveryAt>=RECOVERY_INTERVAL_MS) await archiveRawSave(existing,'Five-minute emergency checkpoint');
+    await writePrimarySave(raw);
+    saveFailCount=0; lastSaveTime=new Date(); setSaveStatus(`Saved ${lastSaveTime.toLocaleTimeString()}`);
+    if(showNotice)toast('Game saved.','levelup'); return true;
   }catch(e){
-    saveFailCount++;
-    // back off instead of retrying every few seconds and spamming errors
-    if(saveFailCount === 1){
-      toast('Autosave hiccup — still playing fine, will retry shortly.', 'warn');
-    } else if(saveFailCount >= 3){
-      saveDisabledUntil = now + 60000; // pause autosave attempts for 60s
-      if(saveFailCount === 3){
-        toast('Autosave paused for a bit — your run continues locally.', 'warn');
-      }
-    }
+    saveFailCount++; setSaveStatus('Save failed — open Recovery Center',false);
+    if(saveFailCount===1)toast('Browser save failed — export from Recovery Center.','warn');
+    else if(saveFailCount>=3)saveDisabledUntil=now+60000;
+    return false;
   }
 }
+function applyLoadedSave(data){
+  if(!data||typeof data!=='object'||!data.player)throw new Error('Invalid VOID HAULER save file.');
+  Object.assign(player,data.player);
+  player.namedPirateKills=player.namedPirateKills||{};player.keyPieces=player.keyPieces||{};player.civilianRep=player.civilianRep||0;player.marketEventIndex=player.marketEventIndex||0;
+  player.gems=player.gems||0;player.pirateTechPieces=player.pirateTechPieces||0;player.upgradePoints=player.upgradePoints||0;player.hideoutCleared=!!player.hideoutCleared;vesselUpgrades();
+  if((player.escortCargoLevel||0)>0&&player.contractVesselUpgrades.cargo===0)player.contractVesselUpgrades.cargo=Math.min(5,player.escortCargoLevel);
+  player.hullMax=hullMaxSafe(data.player);crew=data.crew||[];armory=Array.isArray(data.armory)?data.armory.slice(0,10):[];migrateCrewEquipment();
+  if(data.quest)Object.assign(quest,data.quest);if(data.zone)zone=data.zone;if(data.escort)escortSaveData=data.escort;if(Number.isFinite(data.distressTimer))distressTimer=Math.max(15,data.distressTimer);
+  if(data.savedAt){const d=new Date(data.savedAt);if(!Number.isNaN(d.getTime()))setSaveStatus(`Loaded Level ${player.level||1} · ${d.toLocaleString()}`);}else setSaveStatus('Legacy save loaded — protected upgrade pending');
+}
 async function loadGame(){
-  try{
-    let raw = null;
-    if(hasClaudeStorage()){
-      const res = await window.storage.get(STORAGE_KEY, false);
-      raw = res && res.value;
-    } else {
-      raw = localStorage.getItem(STORAGE_KEY);
-    }
-    if(raw){
-      const data = JSON.parse(raw);
-      Object.assign(player, data.player);
-      player.namedPirateKills=player.namedPirateKills||{}; player.keyPieces=player.keyPieces||{}; player.civilianRep=player.civilianRep||0; player.marketEventIndex=player.marketEventIndex||0;
-      player.gems=player.gems||0; player.pirateTechPieces=player.pirateTechPieces||0; player.upgradePoints=player.upgradePoints||0; player.hideoutCleared=!!player.hideoutCleared;
-      player.hullMax = hullMaxSafe(data.player);
-      crew = data.crew || [];
-      armory = Array.isArray(data.armory) ? data.armory.slice(0,10) : [];
-      migrateCrewEquipment();
-      if(data.quest) Object.assign(quest, data.quest);
-      if(data.zone) zone = data.zone;
-      if(data.escort) escortSaveData = data.escort;
-      if(Number.isFinite(data.distressTimer)) distressTimer = Math.max(15,data.distressTimer);
-      return true;
-    }
-  }catch(e){ /* no save yet */ }
+  try{const raw=await readRawSave();if(raw){applyLoadedSave(JSON.parse(raw));return true;}setSaveStatus('No browser save found — starting new game');}
+  catch(e){setSaveStatus('Save could not be loaded — open Recovery Center',false);toast('Stored save could not be loaded. Open Recovery Center.','warn');}
   return false;
 }
-function hullMaxSafe(p){ return 100 + ((p.hullLevel||1)-1)*30; }
-async function resetSave(){
+function exportSave(event){
   try{
-    if(hasClaudeStorage()){ await window.storage.delete(STORAGE_KEY, false); }
-    else { localStorage.removeItem(STORAGE_KEY); }
-  }catch(e){}
+    if(event){ event.preventDefault(); event.stopPropagation(); }
+    // Read localStorage synchronously so the download remains directly tied to the user's click.
+    let raw=null;
+    try{ raw=localStorage.getItem(STORAGE_KEY); }catch(e){}
+    if(raw){
+      const x=saveSummary(raw),stamp=(x.savedAt||new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
+      downloadRaw(raw,`void-hauler-save-L${x.level}-${stamp}.json`);
+      setSaveStatus('Save download started · check your browser Downloads');
+      toast('Save download started.','levelup');
+      return false;
+    }
+    // Embedded-storage fallback. This path may require the Recovery Center export if a host blocks downloads.
+    exportSaveAsyncFallback();
+  }catch(e){
+    setSaveStatus(e.message||'Export failed',false);
+    alert((e.message||'Could not export save.')+'\n\nOpen Recovery Center and use VIEW RAW if your browser blocks downloads.');
+  }
+  return false;
+}
+async function exportSaveAsyncFallback(){
+  try{
+    const raw=await readRawSave();if(!raw)throw new Error('No stored save exists yet.');
+    const x=saveSummary(raw),stamp=(x.savedAt||new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
+    downloadRaw(raw,`void-hauler-save-L${x.level}-${stamp}.json`);
+    setSaveStatus('Save download started · check your browser Downloads');
+    toast('Save download started.','levelup');
+  }catch(e){setSaveStatus(e.message||'Export failed',false);alert(e.message||'Could not export save.');}
+}
+async function exportAllSaves(){
+  try{
+    const entries=await getRecoveryEntries();if(!entries.length)throw new Error('No saves were found.');
+    const bundle={type:'VOID_HAULER_RECOVERY_BUNDLE',exportedAt:new Date().toISOString(),saves:entries.map(e=>({primary:!!e.primary,meta:e.meta,save:JSON.parse(e.raw)}))};
+    const stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');downloadRaw(JSON.stringify(bundle,null,2),`void-hauler-all-saves-${stamp}.json`);setSaveStatus(`${entries.length} saves exported · no data changed`);
+  }catch(e){setSaveStatus(e.message||'Export failed',false);alert(e.message||'Could not export saves.');}
+}
+async function importSaveFile(event){
+  const file=event.target.files&&event.target.files[0];event.target.value='';if(!file)return;
+  try{
+    const raw=await file.text(),data=JSON.parse(raw);
+    if(data&&data.type==='VOID_HAULER_RECOVERY_BUNDLE')throw new Error('This is an all-saves recovery bundle. Import one individual save exported from Recovery Center.');
+    if(!data||typeof data!=='object'||!data.player)throw new Error('That is not a valid VOID HAULER save.');
+    const current=await readRawSave();if(current)await archiveRawSave(current,'Before save import');
+    await storageSet(STORAGE_KEY,JSON.stringify(data));setSaveStatus('Save imported safely');alert('Save imported. Your previous save was archived. The game will reload now.');location.reload();
+  }catch(e){setSaveStatus('Import failed',false);alert(e.message||'The selected save file could not be imported.');}
+}
+function hullMaxSafe(p){return 100+((p.hullLevel||1)-1)*30;}
+async function resetSave(){
+  const raw=await readRawSave();
+  if(raw){
+    const x=saveSummary(raw),answer=prompt(`Start a new game?\n\nCurrent save: Level ${x.level}, ${x.credits.toLocaleString()} credits.\nIt will be archived in Recovery Center.\n\nType NEW GAME to continue.`);
+    if(answer!=='NEW GAME')return;
+    await archiveRawSave(raw,'Before starting new game');await storageDelete(STORAGE_KEY);
+  }else if(!confirm('Start a new VOID HAULER game?'))return;
   location.reload();
 }
 let saveTimer = 0;
@@ -1248,7 +1577,10 @@ async function startGame(){
   initAudio();
   document.getElementById('start-screen').style.display = 'none';
   await loadGame();
+  gameSessionReady = true;
   migrateCrewEquipment(); crew.forEach(starterEquipment);
+  vesselUpgrades();
+  if(player.frigatesKilled>=RAM_SCOOP_UNLOCK_FRIGATES) player.factionPerks.escortContract=true;
   player.hull = Math.min(player.hull, hullMax());
   player.energy = (player.energy===undefined) ? energyMax() : Math.min(player.energy, energyMax());
   player.shield = (player.shield===undefined) ? shieldMax() : Math.min(player.shield, shieldMax());
@@ -1327,7 +1659,8 @@ window.addEventListener('keydown', e=>{
   if(e.key.toLowerCase()==='z'){ fireMissile(); }
   if(e.key.toLowerCase()==='i'){ toggleManifest(); }
   if(e.key.toLowerCase()==='j'){ toggleQuestJournal(); }
-  if(e.key==='Escape'){ closeStation(); closeOutpost(); closeManifest(); closeQuestJournal(); }
+  if(e.key.toLowerCase()==='t'){ toggleTransfer(); }
+  if(e.key==='Escape'){ closeStation(); closeOutpost(); closeManifest(); closeQuestJournal(); closeTransfer(); }
 });
 window.addEventListener('keyup', e=>{
   keys[e.key.toLowerCase()] = false;
@@ -1394,36 +1727,40 @@ function spawnAsteroidField(x,y,tier,material,parentVx,parentVy){
   return a;
 }
 function ensureAsteroidPopulation(initial){
-  const target = 42;
-  let count = asteroids.filter(a=>a.tier===0).length;
-  while(count < target){
+  const target = 60;
+  let count = asteroids.filter(a=>a.tier===0 && a.material!=='darkmatter').length;
+  const batch = initial ? target : 3;
+  let spawned = 0;
+  while(count < target && spawned < batch){
     let x,y;
     do{
       x = Math.random()*WORLD;
       y = Math.random()*WORLD;
-    } while(Math.hypot(x-STATION.x,y-STATION.y) < 420);
+    } while(Math.hypot(x-STATION.x,y-STATION.y) < 420 || Math.hypot(x-player.x,y-player.y) < 450);
     spawnAsteroidField(x,y,0,null); // composition unrevealed until it's broken down small
     count++;
-    if(!initial) break;
+    spawned++;
   }
 }
-function ensureDarkMatterPopulation(){
-  const target = 2; // only ever 2 dark matter deposits exist in the world at once
-  let count = asteroids.filter(a=>a.material==='darkmatter' && a.tier===0).length;
-  let guard = 0;
-  while(count < target && guard < 10){
+function ensureDarkMatterPopulation(dt=0){
+  const target = 2;
+  const count = asteroids.filter(a=>a.material==='darkmatter' && a.tier===0).length;
+  if(count >= target){ darkMatterRespawnTimer = 0; return; }
+  darkMatterRespawnTimer += dt;
+  if(darkMatterRespawnTimer < 75 && count > 0) return;
+  if(darkMatterRespawnTimer < 30 && count === 0) return;
+  let x,y,guard=0;
+  do{
+    x = Math.random()*WORLD;
+    y = Math.random()*WORLD;
     guard++;
-    let x,y;
-    do{
-      x = Math.random()*WORLD;
-      y = Math.random()*WORLD;
-    } while(Math.hypot(x-STATION.x,y-STATION.y) < 1200);
-    spawnAsteroidField(x,y,0,'darkmatter');
-    count++;
-  }
+  } while(guard<30 && (Math.hypot(x-STATION.x,y-STATION.y) < 1200 || Math.hypot(x-player.x,y-player.y) < 800));
+  spawnAsteroidField(x,y,0,'darkmatter');
+  darkMatterRespawnTimer = 0;
+  toast('Deep-space sensors detected a new Dark Matter deposit.', 'warn');
 }
 function ensureDeepAsteroidPopulation(initial){
-  const target = 42;
+  const target = 60;
   let count = asteroids.filter(a=>a.tier===0).length;
   while(count < target){
     let x,y;
@@ -1540,84 +1877,65 @@ function warpNebula(){
 }
 
 /* ============================= PIRATES ============================= */
-function spawnPirate(x,y, namedId=null){
-  if(!namedId && Math.random()<0.08){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
-  pirates.push({
-    x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
-    hp: PIRATE_HP_BASE, maxHp: PIRATE_HP_BASE,
-    shield: 0, shieldMax: 0, shieldRegenCooldown: 0, isFrigate: false,
-    state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
-    fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
-  });
+function configureNamedBoss(p,namedId){
+  if(!namedId) return p;
+  const np=namedPirateById(namedId);
+  if(!np) return p;
+  p.namedId=namedId; p.pirateName=np.name; p.bossColor=np.color; p.bossFill=np.fill; p.bossBounty=np.bounty;
+  p.maxHp=Math.round(p.maxHp*1.55); p.hp=p.maxHp;
+  if(p.shieldMax>0){p.shieldMax=Math.round(p.shieldMax*1.45);p.shield=p.shieldMax;}
+  p.wantedAnnounced=false; p.isWantedBoss=true;
+  return p;
 }
-function spawnFrigate(x,y, namedId=null){
-  if(!namedId && Math.random()<0.10){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
-  pirates.push({
-    x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
-    hp: FRIGATE_HP, maxHp: FRIGATE_HP,
-    shield: FRIGATE_SHIELD, shieldMax: FRIGATE_SHIELD, shieldRegenCooldown: 0, isFrigate: true,
-    state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
-    fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
-  });
+function spawnPirate(x,y,namedId=null,escortFor=null){
+  const p={x,y,vx:0,vy:0,angle:Math.random()*Math.PI*2,hp:PIRATE_HP_BASE,maxHp:PIRATE_HP_BASE,
+    shield:0,shieldMax:0,shieldRegenCooldown:0,isFrigate:false,isCorvette:false,state:'patrol',wanderAngle:Math.random()*Math.PI*2,wanderTimer:0,
+    fleeTimer:0,stealCooldown:0,attacking:false,stolen:{},namedId:null,pirateName:null,escortFor};
+  configureNamedBoss(p,namedId); pirates.push(p); return p;
+}
+function spawnFrigate(x,y,namedId=null,escortFor=null){
+  const p={x,y,vx:0,vy:0,angle:Math.random()*Math.PI*2,hp:FRIGATE_HP,maxHp:FRIGATE_HP,
+    shield:FRIGATE_SHIELD,shieldMax:FRIGATE_SHIELD,shieldRegenCooldown:0,isFrigate:true,isCorvette:false,state:'patrol',wanderAngle:Math.random()*Math.PI*2,wanderTimer:0,
+    fleeTimer:0,stealCooldown:0,attacking:false,stolen:{},namedId:null,pirateName:null,escortFor};
+  configureNamedBoss(p,namedId); pirates.push(p); return p;
+}
+function spawnCorvette(x,y,namedId=null,escortFor=null){
+  const p={x,y,vx:0,vy:0,angle:Math.random()*Math.PI*2,hp:CORVETTE_HP,maxHp:CORVETTE_HP,
+    shield:CORVETTE_SHIELD,shieldMax:CORVETTE_SHIELD,shieldRegenCooldown:0,isFrigate:false,isCorvette:true,state:'patrol',wanderAngle:Math.random()*Math.PI*2,wanderTimer:0,
+    fleeTimer:0,stealCooldown:0,attacking:false,stolen:{},namedId:null,pirateName:null,escortFor};
+  configureNamedBoss(p,namedId); pirates.push(p); return p;
+}
+function spawnBossEscort(np,boss,offset){
+  const ang=offset===0?Math.PI*.72:-Math.PI*.72, dist=115;
+  const x=Math.max(100,Math.min(WORLD-100,boss.x+Math.cos(ang)*dist));
+  const y=Math.max(100,Math.min(WORLD-100,boss.y+Math.sin(ang)*dist));
+  if(np.ship==='corvette') return spawnCorvette(x,y,null,np.id);
+  if(np.ship==='frigate') return spawnFrigate(x,y,null,np.id);
+  return spawnPirate(x,y,null,np.id);
+}
+function ensureNamedBossForZone(){
+  if(pirates.some(p=>p.namedId)) return;
+  const np=NAMED_PIRATES.find(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
+  if(!np) return;
+  const pos=np.anchor||{x:Math.random()*WORLD,y:Math.random()*WORLD};
+  const boss=np.ship==='corvette'?spawnCorvette(pos.x,pos.y,np.id):(np.ship==='frigate'?spawnFrigate(pos.x,pos.y,np.id):spawnPirate(pos.x,pos.y,np.id));
+  spawnBossEscort(np,boss,0); spawnBossEscort(np,boss,1);
+  toast(`Long-range sensors: WANTED pirate ${np.name} patrols this zone with two escorts.`, 'warn');
 }
 function ensurePiratePopulation(){
-  const target = pirateTargetCount();
-  let guard = 0;
-  while(pirates.length < target && guard < 20){
-    guard++;
-    let x,y;
-    do{
-      x = Math.random()*WORLD;
-      y = Math.random()*WORLD;
-    } while(Math.hypot(x-STATION.x,y-STATION.y) < 700 || Math.hypot(x-player.x,y-player.y) < 500);
-    spawnPirate(x,y);
-  }
-  const eligible=NAMED_PIRATES.filter(n=>n.zone==='normal' && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
-  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnPirate(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
+  const target=pirateTargetCount(); let guard=0;
+  while(pirates.length<target&&guard<20){guard++;let x,y;do{x=Math.random()*WORLD;y=Math.random()*WORLD;}while(Math.hypot(x-STATION.x,y-STATION.y)<700||Math.hypot(x-player.x,y-player.y)<500);spawnPirate(x,y);}
+  ensureNamedBossForZone();
 }
 function ensureFrigatePopulation(){
-  const target = FRIGATE_TARGET_COUNT;
-  let guard = 0;
-  while(pirates.length < target && guard < 20){
-    guard++;
-    let x,y;
-    do{
-      x = Math.random()*WORLD;
-      y = Math.random()*WORLD;
-    } while(Math.hypot(x-player.x,y-player.y) < 500);
-    spawnFrigate(x,y);
-  }
-  const eligible=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
-  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnFrigate(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
-}
-function spawnCorvette(x,y, namedId=null){
-  if(!namedId && Math.random()<0.12){ const options=NAMED_PIRATES.filter(n=>n.zone===zone && !(player.namedPirateKills&&player.namedPirateKills[n.id])); if(options.length) namedId=options[Math.floor(Math.random()*options.length)].id; }
-  pirates.push({
-    x, y, vx:0, vy:0, angle: Math.random()*Math.PI*2,
-    hp: CORVETTE_HP, maxHp: CORVETTE_HP,
-    shield: CORVETTE_SHIELD, shieldMax: CORVETTE_SHIELD, shieldRegenCooldown: 0,
-    isFrigate: false, isCorvette: true,
-    state: 'patrol', wanderAngle: Math.random()*Math.PI*2, wanderTimer: 0,
-    fleeTimer: 0, stealCooldown: 0, attacking: false,
-    stolen: {}, namedId, pirateName:namedId?namedPirateById(namedId).name:null,
-  });
+  const target=FRIGATE_TARGET_COUNT;let guard=0;
+  while(pirates.length<target&&guard<20){guard++;let x,y;do{x=Math.random()*WORLD;y=Math.random()*WORLD;}while(Math.hypot(x-player.x,y-player.y)<500);spawnFrigate(x,y);}
+  ensureNamedBossForZone();
 }
 function ensureCorvettePopulation(){
-  const target = CORVETTE_TARGET_COUNT;
-  let guard = 0;
-  while(pirates.length < target && guard < 20){
-    guard++;
-    let x,y;
-    do{
-      x = Math.random()*WORLD;
-      y = Math.random()*WORLD;
-    } while(Math.hypot(x-player.x,y-player.y) < 500 || Math.hypot(x-NEBULA_GATE_POS.x,y-NEBULA_GATE_POS.y) < 400);
-    spawnCorvette(x,y);
-  }
-  const eligible=NAMED_PIRATES.filter(n=>n.zone==='nebula' && !(player.namedPirateKills&&player.namedPirateKills[n.id]));
-  if(eligible.length && !pirates.some(p=>p.namedId)){ const n=eligible[0]; spawnCorvette(Math.random()*WORLD,Math.random()*WORLD,n.id); toast(`Bounty signal detected: ${n.name}`, 'warn'); }
+  const target=CORVETTE_TARGET_COUNT;let guard=0;
+  while(pirates.length<target&&guard<20){guard++;let x,y;do{x=Math.random()*WORLD;y=Math.random()*WORLD;}while(Math.hypot(x-player.x,y-player.y)<500||Math.hypot(x-NEBULA_GATE_POS.x,y-NEBULA_GATE_POS.y)<400);spawnCorvette(x,y);}
+  ensureNamedBossForZone();
 }
 // Shared damage helper for pirates/frigates — shield absorbs first, same pattern as the player's applyDamage.
 function damagePirate(p, amount){
@@ -1646,68 +1964,34 @@ function queuePirateLootPickup(material, qty=1){
     pirateLootPickupTimer = null;
   }, 450);
 }
+function pirateScrapRange(p){
+  if(p.namedId){if(p.isCorvette)return [50,80];if(p.isFrigate)return [25,45];return [10,20];}
+  if(p.isCorvette)return [15,30];if(p.isFrigate)return [8,15];return [2,5];
+}
 function destroyPirate(p){
-  const idx = pirates.indexOf(p);
-  if(idx>=0) pirates.splice(idx,1);
-  sfxExplosion();
-  quest.piratesKilled++;
-  checkQuestCompletion();
-  const bountyMul = p.isCorvette ? CORVETTE_BOUNTY_MULT : (p.isFrigate ? 3 : 1);
-  const bounty = Math.round((PIRATE_BOUNTY_MIN + Math.random()*(PIRATE_BOUNTY_MAX-PIRATE_BOUNTY_MIN)) * bountyMul);
-  player.credits += bounty;
-  grantXp(bounty*0.15);
-  const shipLabel = p.pirateName || (p.isCorvette ? 'Corvette' : (p.isFrigate ? 'Frigate' : 'Pirate'));
-  toast(`${shipLabel} destroyed! +${bounty} cr bounty`, 'levelup');
+  const idx=pirates.indexOf(p);if(idx>=0)pirates.splice(idx,1);
+  sfxExplosion();quest.piratesKilled++;checkQuestCompletion();
+  const bounty=p.namedId?(p.bossBounty||2500):Math.round((PIRATE_BOUNTY_MIN+Math.random()*(PIRATE_BOUNTY_MAX-PIRATE_BOUNTY_MIN))*(p.isCorvette?CORVETTE_BOUNTY_MULT:(p.isFrigate?3:1)));
+  player.credits+=bounty;grantXp(bounty*0.15);
+  const shipLabel=p.pirateName||(p.isCorvette?'Corvette':(p.isFrigate?'Frigate':'Pirate'));
+  if(p.namedId) toast(`☠ WANTED PIRATE ELIMINATED: ${shipLabel} · +${bounty.toLocaleString()} cr`, 'levelup');
+  else toast(`${shipLabel} destroyed! +${bounty} cr bounty`, 'levelup');
   if(p.namedId){
-    player.namedPirateKills=player.namedPirateKills||{}; player.keyPieces=player.keyPieces||{}; player.namedPirateKills[p.namedId]=true;
-    const np=namedPirateById(p.namedId);
-    if(np && !player.keyPieces[p.namedId]){ player.keyPieces[p.namedId]=true; toast(`KEY PIECE RECOVERED: ${np.piece} (${keyPieceCount()}/${NAMED_PIRATES.length})`, 'levelup'); sfxLevelUp(); }
+    player.namedPirateKills=player.namedPirateKills||{};player.keyPieces=player.keyPieces||{};player.namedPirateKills[p.namedId]=true;
+    const np=namedPirateById(p.namedId);if(np&&!player.keyPieces[p.namedId]){player.keyPieces[p.namedId]=true;toast(`KEY PIECE RECOVERED: ${np.piece} (${keyPieceCount()}/${NAMED_PIRATES.length})`,'levelup');sfxLevelUp();}
   }
-  // any cargo it stole but hadn't gotten away with drops back as recoverable ore
-  Object.keys(p.stolen).forEach(mat=>{
-    for(let i=0;i<p.stolen[mat];i++){
-      const ang = Math.random()*Math.PI*2;
-      const speed = 30+Math.random()*40;
-      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:mat,life:0,source:'pirate_loot'});
-    }
-  });
-  spawnDebris(p.x,p.y, p.isCorvette ? '#a3b8c2' : (p.isFrigate ? '#ff6a3d' : '#e0546b'));
-  if(p.isCorvette){
-    // Corvettes always leave harvestable scrap metal behind
-    const scrapQty = SCRAP_DROP_MIN + Math.floor(Math.random()*(SCRAP_DROP_MAX-SCRAP_DROP_MIN+1));
-    for(let i=0;i<scrapQty;i++){
-      const ang = Math.random()*Math.PI*2;
-      const speed = 25+Math.random()*35;
-      oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:'scrap_metal',life:0,source:'pirate_loot'});
-    }
-    toast(`Corvette wreck left ${scrapQty} Scrap Metal behind — go harvest it.`);
+  Object.keys(p.stolen).forEach(mat=>{for(let i=0;i<p.stolen[mat];i++){const ang=Math.random()*Math.PI*2,speed=30+Math.random()*40;oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:mat,life:0,source:'pirate_loot'});}});
+  spawnDebris(p.x,p.y,p.bossColor||(p.isCorvette?'#a3b8c2':(p.isFrigate?'#ff6a3d':'#e0546b')));
+  const [scrapMin,scrapMax]=pirateScrapRange(p),scrapQty=scrapMin+Math.floor(Math.random()*(scrapMax-scrapMin+1));
+  for(let i=0;i<scrapQty;i++){const ang=Math.random()*Math.PI*2,speed=25+Math.random()*35;oreChunks.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,material:'scrap_metal',life:0,source:'pirate_loot'});}
+  toast(`${shipLabel} wreckage: ${scrapQty} Scrap Metal available for recovery.`);
+  if(p.isFrigate&&!player.hasMissileLauncher&&Math.random()<FRIGATE_LAUNCHER_DROP_CHANCE){player.hasMissileLauncher=true;toast('Salvaged a Missile Launcher from the wreckage! Buy ammo from the Black Market Relay, fire with Z.','levelup');saveGame();}
+  else if(player.hasMissileLauncher){
+    if(Math.random()<SHIP_MISSILE_DROP_CHANCE){const qty=1+Math.floor(Math.random()*3);let added=0;for(let i=0;i<qty;i++){if(canAddShipMissiles(1)){player.missileAmmo++;added++;}}if(added>0)toast(`Salvaged ${added} missile${added>1?'s':''} from the wreckage.`);}
+    if((p.isFrigate||p.isCorvette)&&Math.random()<DMM_DROP_CHANCE&&canAddDMM(1)){player.dmmAmmo++;toast('Salvaged a Dark Matter Missile from the wreckage!','levelup');}
   }
-  if(p.isFrigate && !player.hasMissileLauncher && Math.random() < FRIGATE_LAUNCHER_DROP_CHANCE){
-    player.hasMissileLauncher = true;
-    toast('Salvaged a Missile Launcher from the wreckage! Buy ammo from the Black Market Relay, fire with Z.', 'levelup');
-    saveGame();
-  } else if(player.hasMissileLauncher){
-    // ammo salvage only makes sense once you actually have the launcher installed
-    if(Math.random() < SHIP_MISSILE_DROP_CHANCE){
-      const qty = 1 + Math.floor(Math.random()*3); // 1-3
-      let added = 0;
-      for(let i=0;i<qty;i++){ if(canAddShipMissiles(1)){ player.missileAmmo++; added++; } }
-      if(added>0) toast(`Salvaged ${added} missile${added>1?'s':''} from the wreckage.`);
-    }
-    if((p.isFrigate || p.isCorvette) && Math.random() < DMM_DROP_CHANCE && canAddDMM(1)){
-      player.dmmAmmo++;
-      toast('Salvaged a Dark Matter Missile from the wreckage!', 'levelup');
-    }
-  }
-  if(p.isFrigate){
-    player.frigatesKilled++;
-    if(player.frigatesKilled === RAM_SCOOP_UNLOCK_FRIGATES){
-      nebulaGate = { x: NEBULA_GATE_POS.x, y: NEBULA_GATE_POS.y, radius: 150 };
-      toast('Frigate salvage patterns decoded! Ram Scoop equipment now available at Ceres, and a new Stargate has powered up in the Deep Zone.', 'levelup');
-      sfxLevelUp();
-      saveGame();
-    }
-  }
+  if(p.isFrigate){player.frigatesKilled++;if(player.frigatesKilled===RAM_SCOOP_UNLOCK_FRIGATES){nebulaGate={x:NEBULA_GATE_POS.x,y:NEBULA_GATE_POS.y,radius:150};player.factionPerks.escortContract=true;toast('Frigate Bounty complete! The faction awards you a Contract Vessel. Ram Scoop equipment and the Nebula Stargate are also unlocked.','levelup');sfxLevelUp();saveGame(false,'Contract Vessel awarded');}}
+  if(p.namedId) saveGame(false,`Defeated WANTED pirate ${shipLabel}`);
 }
 
 // Finds the asteroid (if any) that blocks a straight line between two points —
@@ -1739,6 +2023,7 @@ function updatePirates(dt){
     const dx = player.x-p.x, dy = player.y-p.y;
     const dist = Math.hypot(dx,dy);
     const angToPlayer = Math.atan2(dy,dx);
+    if(p.namedId && dist<PIRATE_DETECT_RANGE*1.25 && !p.wantedAnnounced){p.wantedAnnounced=true;toast(`⚠ WANTED ⚠ ${p.pirateName} detected · two escorts expected`, 'warn');tone(240,.18,{type:'square',vol:.10});setTimeout(()=>tone(180,.25,{type:'square',vol:.09}),180);}
 
     if(p.state==='flee'){
       p.angle = Math.atan2(p.y-player.y, p.x-player.x);
@@ -1746,11 +2031,8 @@ function updatePirates(dt){
       p.vy = Math.sin(p.angle)*PIRATE_SPEED*1.15;
       p.fleeTimer -= dt;
       if(p.fleeTimer<=0 || dist>PIRATE_DETECT_RANGE*1.6){
-        const hadLoot = Object.keys(p.stolen).length > 0;
-        toast(hadLoot ? 'The pirate warped out with your cargo!' : 'The pirate warped out and escaped.', 'warn');
-        spawnDebris(p.x, p.y, '#dbe6ea'); // small flash so the despawn reads as a warp-out, not a glitch
-        pirates.splice(i,1);
-        continue;
+        if(p.namedId){p.state='patrol';p.fleeTimer=0;p.stolen={};toast(`${p.pirateName} refuses to abandon the hunt.`, 'warn');}
+        else {const hadLoot=Object.keys(p.stolen).length>0;toast(hadLoot?'The pirate warped out with your cargo!':'The pirate warped out and escaped.','warn');spawnDebris(p.x,p.y,'#dbe6ea');pirates.splice(i,1);continue;}
       }
     } else if(dist < PIRATE_DETECT_RANGE){
       p.state = 'chase';
@@ -1837,11 +2119,11 @@ function updateEscort(dt){
   }
   if(!escort){
     escort = { x: player.x - 50, y: player.y - 50, vx:0, vy:0, angle: player.angle, attacking:false,
-      level: 1, xp: 0, cargo: {} };
+      level:1,xp:0,cargo:{},gas:{},hp:escortHullMax() };
     if(escortSaveData){
       escort.level = escortSaveData.level || 1;
       escort.xp = escortSaveData.xp || 0;
-      escort.cargo = escortSaveData.cargo || {};
+      escort.cargo=escortSaveData.cargo||{}; escort.gas=escortSaveData.gas||{}; escort.hp=Math.min(escortSaveData.hp||escortHullMax(),escortHullMax());
       escortSaveData = null;
     }
   }
@@ -1851,7 +2133,7 @@ function updateEscort(dt){
   const dx = targetX-escort.x, dy = targetY-escort.y;
   const dist = Math.hypot(dx,dy);
   if(dist > 2){
-    const followSpeed = Math.min(320, dist*4);
+    const followSpeed=Math.min(escortFollowSpeed(),dist*4);
     escort.vx = (dx/dist)*followSpeed;
     escort.vy = (dy/dist)*followSpeed;
   } else {
@@ -1887,7 +2169,7 @@ function updateEscort(dt){
         escort.attacking = true;
         escort.targetX = bestRock.x;
         escort.targetY = bestRock.y;
-        bestRock.hp -= ESCORT_MINE_DPS*dt;
+        bestRock.hp-=escortMineDps()*dt;
         if(bestRock.hp <= 0){
           const idx = asteroids.indexOf(bestRock);
           if(idx>=0) asteroids.splice(idx,1);
@@ -1918,17 +2200,8 @@ function updateEscort(dt){
     }
   }
 
-  // auto-offload — escort hands its cargo to you whenever it's close enough and you have room
-  const escortUsed = Object.values(escort.cargo).reduce((s,v)=>s+v,0);
-  if(escortUsed > 0 && Math.hypot(player.x-escort.x, player.y-escort.y) < 120){
-    for(const mat of Object.keys(escort.cargo)){
-      while(escort.cargo[mat] > 0 && cargoUsed() + ((MATERIALS[mat]&&MATERIALS[mat].cargoWeight)||1) <= cargoCapacity()){
-        escort.cargo[mat]--;
-        player.cargo[mat] = (player.cargo[mat]||0) + 1;
-      }
-      if(escort.cargo[mat] <= 0) delete escort.cargo[mat];
-    }
-  }
+  // Cargo remains aboard until the player presses T nearby and chooses what to transfer.
+  escort.hp=Math.min(escort.hp||escortHullMax(),escortHullMax());
 }
 
 /* ============================= MISSILES ============================= */
@@ -2082,6 +2355,8 @@ function spawnDebris(x,y,color){
 
 /* ============================= XP / LEVEL ============================= */
 function grantXp(amount){
+  const captainLevelBefore=player.level;
+  const vesselLevelBefore=escort?escort.level:0;
   player.xp += amount;
   let need = xpToNext(player.level);
   while(player.xp >= need){
@@ -2109,20 +2384,23 @@ function grantXp(amount){
   if(escort){
     escort.xp += amount * ESCORT_XP_SHARE;
     let eneed = escortXpToNext(escort.level);
-    while(escort.xp >= eneed && escort.level < 50){
+    while(escort.xp >= eneed && escort.level < ESCORT_MAX_LEVEL){
       escort.xp -= eneed;
       escort.level++;
-      toast(`Faction Escort reached Level ${escort.level}!`, 'levelup');
+      toast(`Contract Vessel reached Level ${escort.level}!`, 'levelup');
       sfxLevelUp();
       if(escort.level === ESCORT_MINE_LEVEL){
-        toast('Escort can now mine nearby asteroids with its own laser!', 'levelup');
+        toast('Contract Vessel certified Tier I — mining and first FP upgrades unlocked!', 'levelup');
       }
       if(escort.level === ESCORT_COLLECT_LEVEL){
-        toast('Escort can now collect ore! Install a Mule Bay to give it cargo space.', 'levelup');
+        toast('Contract Vessel certified Tier II — autonomous collection and Tier II upgrades unlocked!', 'levelup');
       }
+      if([75,100,150].includes(escort.level)) toast(`Contract Vessel Tier ${vesselCertification()} upgrades certified!`, 'levelup');
       eneed = escortXpToNext(escort.level);
     }
   }
+  if(player.level>captainLevelBefore) saveGame(false,`Captain reached Level ${player.level}`);
+  else if(escort&&escort.level>vesselLevelBefore) saveGame(false,`Contract Vessel reached Level ${escort.level}`);
 }
 
 /* ============================= TOASTS ============================= */
@@ -2145,7 +2423,7 @@ function loop(now){
   }
   render();
   saveTimer += dt;
-  if(saveTimer > 4){ saveTimer = 0; saveGame(); }
+  if(saveTimer > QUICK_SAVE_INTERVAL_SECONDS){ saveTimer = 0; saveGame(); }
   requestAnimationFrame(loop);
 }
 
@@ -2181,12 +2459,25 @@ function update(dt){
   player.x += player.vx*dt;
   player.y += player.vy*dt;
 
-  // world bounds - soft push back
+  // world bounds - soft push back with visible navigation warning
   const margin = 80;
-  if(player.x < margin){ player.x = margin; player.vx *= -0.3; }
-  if(player.x > WORLD-margin){ player.x = WORLD-margin; player.vx *= -0.3; }
-  if(player.y < margin){ player.y = margin; player.vy *= -0.3; }
-  if(player.y > WORLD-margin){ player.y = WORLD-margin; player.vy *= -0.3; }
+  edgeFlashSides = {left:false,right:false,top:false,bottom:false};
+  let hitEdge = false;
+  if(player.x < margin){ player.x = margin; player.vx *= -0.3; edgeFlashSides.left=true; hitEdge=true; }
+  if(player.x > WORLD-margin){ player.x = WORLD-margin; player.vx *= -0.3; edgeFlashSides.right=true; hitEdge=true; }
+  if(player.y < margin){ player.y = margin; player.vy *= -0.3; edgeFlashSides.top=true; hitEdge=true; }
+  if(player.y > WORLD-margin){ player.y = WORLD-margin; player.vy *= -0.3; edgeFlashSides.bottom=true; hitEdge=true; }
+  if(hitEdge){
+    edgeFlashTimer = 1.1;
+    if(edgeWarnCooldown<=0){
+      toast('NAVIGATION WARNING: You have reached the charted edge of space.', 'warn');
+      tone(180,0.18,{type:'square',vol:0.08});
+      setTimeout(()=>tone(120,0.24,{type:'square',vol:0.07}),140);
+      edgeWarnCooldown = 3.5;
+    }
+  }
+  edgeFlashTimer = Math.max(0, edgeFlashTimer-dt);
+  edgeWarnCooldown = Math.max(0, edgeWarnCooldown-dt);
 
   // dock check
   dockable = false;
@@ -2276,7 +2567,7 @@ function update(dt){
   }
   if(zone === 'normal'){
     ensureAsteroidPopulation(false);
-    ensureDarkMatterPopulation();
+    ensureDarkMatterPopulation(dt);
   } else if(zone === 'deep'){
     ensureDeepAsteroidPopulation(false);
   } else if(zone === 'nebula'){
@@ -2491,6 +2782,21 @@ function render(){
   }
   ctx.globalAlpha = 1;
 
+  // flashing chart boundary when the ship reaches the edge of space
+  if(edgeFlashTimer > 0){
+    const pulse = 0.35 + 0.65*Math.abs(Math.sin(performance.now()*0.018));
+    ctx.save();
+    ctx.strokeStyle = `rgba(224,84,107,${pulse})`;
+    ctx.shadowColor = '#e0546b';
+    ctx.shadowBlur = 16;
+    ctx.lineWidth = 5;
+    if(edgeFlashSides.left){ ctx.beginPath(); ctx.moveTo(3,0); ctx.lineTo(3,H); ctx.stroke(); }
+    if(edgeFlashSides.right){ ctx.beginPath(); ctx.moveTo(W-3,0); ctx.lineTo(W-3,H); ctx.stroke(); }
+    if(edgeFlashSides.top){ ctx.beginPath(); ctx.moveTo(0,3); ctx.lineTo(W,3); ctx.stroke(); }
+    if(edgeFlashSides.bottom){ ctx.beginPath(); ctx.moveTo(0,H-3); ctx.lineTo(W,H-3); ctx.stroke(); }
+    ctx.restore();
+  }
+
   // station
   if(zone === 'normal') drawStation();
   if(zone === 'deep' || zone === 'nebula') drawOutpost();
@@ -2703,8 +3009,8 @@ function render(){
     if(sx<-90||sx>W+90||sy<-90||sy>H+90) continue;
     const scale = p.isCorvette ? CORVETTE_SCALE : (p.isFrigate ? 1.6 : 1);
     const shielded = (p.isFrigate || p.isCorvette) && p.shieldMax>0;
-    const hullCol = p.isCorvette ? '#c9d6de' : (p.isFrigate ? '#ff6a3d' : '#e0546b');
-    const fillCol = p.isCorvette ? '#232b33' : (p.isFrigate ? '#3a2010' : '#3a1620');
+    const hullCol = p.bossColor || (p.isCorvette ? '#c9d6de' : (p.isFrigate ? '#ff6a3d' : '#e0546b'));
+    const fillCol = p.bossFill || (p.isCorvette ? '#232b33' : (p.isFrigate ? '#3a2010' : '#3a1620'));
     const label = p.isCorvette ? 'CORV' : (p.isFrigate ? 'HULL' : '');
 
     if(shielded && p.shield>0){
@@ -2739,7 +3045,18 @@ function render(){
     }
     ctx.closePath();
     ctx.fill(); ctx.stroke();
+    // Visible modular upgrades: cargo pods, gas tanks, armor, laser emitter, and thrusters.
+    if(vu.cargo>0){ctx.fillStyle='#25384b';ctx.strokeStyle='#7aa7c7';for(const sy of [-8,8]){ctx.fillRect(-7,sy-3,9+vu.cargo*1.2,6);ctx.strokeRect(-7,sy-3,9+vu.cargo*1.2,6);}}
+    if(vu.gas>0){ctx.fillStyle='#6f8fa3';ctx.strokeStyle='#b8d7e8';for(const sy of [-12,12]){ctx.beginPath();ctx.ellipse(-2,sy,3+vu.gas*.35,6,0,0,Math.PI*2);ctx.fill();ctx.stroke();}}
+    if(vu.hull>0){ctx.strokeStyle='#d6c58a';ctx.lineWidth=1+vu.hull*.25;ctx.strokeRect(-5,-5,12,10);}
+    if(vu.laser>0){ctx.fillStyle='#4fe0d0';ctx.fillRect(8,-1.2,4+vu.laser,2.4);}
+    if(vu.engine>0){ctx.fillStyle='#f2a154';ctx.shadowColor='#f2a154';ctx.shadowBlur=7;for(const sy of [-3,3])ctx.fillRect(-10-vu.engine*.5,sy-1,4+vu.engine*.7,2);}
     ctx.restore();
+
+    if(p.namedId){
+      const flash=Math.floor(performance.now()/500)%2===0;
+      ctx.save();ctx.textAlign='center';ctx.font='bold 12px "Chakra Petch",sans-serif';ctx.fillStyle=flash?'#ff334f':'#ffd45c';ctx.shadowColor='#ff334f';ctx.shadowBlur=flash?12:4;ctx.fillText('⚠ WANTED ⚠',sx,sy-(p.isCorvette?70:(p.isFrigate?58:48)));ctx.shadowBlur=0;ctx.font='bold 11px "JetBrains Mono",monospace';ctx.fillStyle='#ffffff';ctx.fillText(p.pirateName,sx,sy-(p.isCorvette?56:(p.isFrigate?45:36)));ctx.restore();
+    }
 
     // shield readout (shielded ships only)
     if(shielded){
@@ -2783,6 +3100,9 @@ function render(){
       ctx.restore();
     }
   }
+
+  const activeBoss=pirates.filter(p=>p.namedId&&Math.hypot(p.x-player.x,p.y-player.y)<1200).sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y))[0];
+  if(activeBoss){const bw=Math.min(520,W*.58),bx=(W-bw)/2,by=18,pct=Math.max(0,activeBoss.hp/activeBoss.maxHp);ctx.save();ctx.fillStyle='rgba(5,8,14,.88)';ctx.strokeStyle=activeBoss.bossColor||'#ff334f';ctx.lineWidth=2;ctx.fillRect(bx,by,bw,34);ctx.strokeRect(bx,by,bw,34);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(bx+8,by+21,bw-16,7);ctx.fillStyle=activeBoss.bossColor||'#ff334f';ctx.fillRect(bx+8,by+21,(bw-16)*pct,7);ctx.textAlign='center';ctx.font='bold 12px "Chakra Petch",sans-serif';ctx.fillStyle=Math.floor(performance.now()/500)%2===0?'#ff334f':'#ffd45c';ctx.fillText(`⚠ WANTED ⚠  ${activeBoss.pirateName}`,W/2,by+14);ctx.restore();}
 
   // laser beam
   if(firing && laserTarget){
@@ -2855,7 +3175,8 @@ function render(){
     ctx.save();
     ctx.translate(esx,esy);
     ctx.rotate(escort.angle);
-    ctx.fillStyle = '#16323a';
+    const vu=vesselUpgrades();
+    ctx.fillStyle='#16323a';
     ctx.strokeStyle = '#4fe0d0';
     ctx.lineWidth = 1.5;
     ctx.shadowColor = '#4fe0d0'; ctx.shadowBlur = 6;
@@ -2884,7 +3205,7 @@ function render(){
     ctx.font = '9px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = escort.level>=ESCORT_COLLECT_LEVEL ? '#f2a154' : (escort.level>=ESCORT_MINE_LEVEL ? '#4fe0d0' : 'rgba(79,224,208,.55)');
-    ctx.fillText(`Lv${escort.level}`, esx, esy-18);
+    ctx.fillText(`CONTRACT Lv${escort.level}`,esx,esy-18);
     ctx.restore();
   }
 
@@ -2944,8 +3265,9 @@ function drawRadar(){
     const dist = Math.hypot(dx,dy);
     if(dist > range) continue;
     const rx = (dx/range)*R, ry = (dy/range)*R;
-    radarCtx.fillStyle = p.state==='chase' ? '#ff5a6e' : 'rgba(224,84,107,.6)';
-    radarCtx.beginPath(); radarCtx.arc(rx,ry,2.3,0,Math.PI*2); radarCtx.fill();
+    radarCtx.fillStyle = p.namedId?(p.bossColor||'#ffd45c'):(p.state==='chase'?'#ff5a6e':'rgba(224,84,107,.6)');
+    if(p.namedId){radarCtx.strokeStyle=p.bossColor||'#ffd45c';radarCtx.lineWidth=1;radarCtx.globalAlpha=.45+.35*Math.sin(performance.now()*.006);radarCtx.beginPath();radarCtx.arc(rx,ry,5.5,0,Math.PI*2);radarCtx.stroke();radarCtx.globalAlpha=1;}
+    radarCtx.beginPath(); radarCtx.arc(rx,ry,p.namedId?3.8:2.3,0,Math.PI*2); radarCtx.fill();
   }
 
   // distress and salvage blips
@@ -3641,51 +3963,22 @@ function updateOutpostCredits(){
 }
 function currentRelaySellMultiplier(){ return zone==='nebula' ? 0.90 : OUTPOST_SELL_MULT; }
 function renderOutpostSell(){
-  const el = document.getElementById('outpost-sell');
-  const label = el && el.previousElementSibling;
-  if(label) label.innerHTML = zone==='nebula'
+  const el=document.getElementById('outpost-sell');
+  const label=el&&el.previousElementSibling;
+  if(label) label.innerHTML=zone==='nebula'
     ? 'Sell Cargo <span style="color:var(--text-dim);text-transform:none;">(nebula relay rates — 10% under market)</span>'
     : 'Sell Cargo <span style="color:var(--text-dim);text-transform:none;">(fence rates — 20% under market)</span>';
-  const entries = MAT_KEYS.filter(k=>player.cargo[k]>0);
-  let total = 0;
-  if(entries.length===0){
-    el.innerHTML = '<div class="empty-note">Cargo hold is empty.</div>';
-    return;
-  }
-  let rows = `<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Civilian standing: ${civilianTier().name} · Ceres bonus ${Math.round((civilianTier().sell-1)*100)}%</div></div>`;
-  entries.forEach(k=>{
-    const qty = player.cargo[k];
-    const mat = MATERIALS[k];
-    const val = Math.round(qty*effectivePrice(k)*currentRelaySellMultiplier());
-    total += val;
-    rows += `<div class="cargo-row">
-      <span class="cargo-name"><span class="swatch" style="background:${mat.color}"></span>${mat.name} <span style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;">(${mat.symbol})</span></span>
-      <span class="cargo-qty">×${qty}</span>
-      <span class="cargo-val mono">${val.toLocaleString()} cr</span>
-    </div>`;
-  });
-  el.innerHTML = rows + `<button class="sell-btn" style="background:none;border-color:var(--amber);color:var(--amber);" onclick="sellAllOutpost()">Sell All — ${total.toLocaleString()} cr</button>`;
+  const entries=MAT_KEYS.filter(k=>player.cargo[k]>0);
+  if(entries.length===0){ el.innerHTML='<div class="empty-note">Cargo hold is empty.</div>'; return; }
+  let rows=`<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Protected cargo is unchecked by default.</div></div>`;
+  rows+=`<div class="sell-toolbar"><button onclick="setCargoSelection('relay',true,false)">Select Regular Cargo</button><button onclick="setCargoSelection('relay',false,true)">Clear Selection</button><button onclick="setCargoSelection('relay',true,true)">Select Everything</button></div>`;
+  const mult=currentRelaySellMultiplier();
+  entries.forEach(k=>rows+=cargoSaleRow(k,'relay',mult));
+  el.innerHTML=rows+`<button id="relay-sell-selected-btn" class="sell-btn" style="background:none;border-color:var(--amber);color:var(--amber);" onclick="sellSelected('relay')">Sell Selected</button>`;
+  updateSelectedSaleTotal('relay');
 }
-function sellAllOutpost(){
-  let total = 0, units = 0;
-  MAT_KEYS.forEach(k=>{
-    if(player.cargo[k]>0){
-      total += Math.round(player.cargo[k]*effectivePrice(k)*currentRelaySellMultiplier());
-      units += player.cargo[k];
-      player.cargo[k] = 0;
-    }
-  });
-  if(total>0){
-    player.credits += total;
-    grantXp(total*0.08);
-    toast(`Fenced ${units} units for ${total.toLocaleString()} credits`);
-    sfxSell();
-  }
-  renderOutpostSell();
-  updateHUD();
-  updateOutpostCredits();
-  saveGame();
-}
+function sellAllOutpost(){ sellSelected('relay'); }
+
 function renderOutpostMissiles(){
   const el = document.getElementById('outpost-missiles');
   if(!player.hasMissileLauncher){ el.innerHTML = ''; return; }
@@ -3805,60 +4098,81 @@ function effectivePrice(matKey){
   if(zone==='normal') price *= civilianTier().sell;
   return price;
 }
-function renderSellTab(){
-  const el = document.getElementById('tab-sell');
-  const entries = MAT_KEYS.filter(k=>player.cargo[k]>0);
-  let total = 0;
-  if(entries.length===0){
-    el.innerHTML = '<div class="empty-note">Cargo hold is empty. Go mine some asteroids.</div>';
-    return;
-  }
-  let rows = `<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Civilian standing: ${civilianTier().name} · Ceres bonus ${Math.round((civilianTier().sell-1)*100)}%</div></div>`;
-  entries.forEach(k=>{
-    const qty = player.cargo[k];
-    const mat = MATERIALS[k];
-    const val = Math.round(qty*effectivePrice(k));
-    total += val;
-    rows += `<div class="cargo-row">
-      <span class="cargo-name"><span class="swatch" style="background:${mat.color}"></span>${mat.name} <span style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;">(${mat.symbol})</span></span>
-      <span class="cargo-qty">×${qty}</span>
-      <span class="cargo-val mono">${val.toLocaleString()} cr</span>
-    </div>`;
+function protectedCargoReason(matKey){
+  if(matKey==='darkmatter' && !quest.completed) return 'Frontier Trial quest item';
+  if(matKey==='scrap_metal' && !player.hideoutUnlocked && !player.hideoutCleared) return `Pirate Key resource (${player.cargo.scrap_metal||0}/${HIDEOUT_SCRAP_COST})`;
+  if(matKey==='water') return 'Crafted survival resource';
+  return '';
+}
+function selectedCargoKeys(scope){
+  return [...document.querySelectorAll(`input[data-sell-scope="${scope}"]:checked`)].map(x=>x.dataset.mat);
+}
+function setCargoSelection(scope, checked, includeProtected=false){
+  document.querySelectorAll(`input[data-sell-scope="${scope}"]`).forEach(cb=>{
+    if(includeProtected || !protectedCargoReason(cb.dataset.mat)) cb.checked=checked;
   });
-  el.innerHTML = rows + `<button class="sell-btn" onclick="sellAll()">Sell All — ${total.toLocaleString()} cr</button>`;
+  updateSelectedSaleTotal(scope);
+}
+function updateSelectedSaleTotal(scope){
+  const relay = scope==='relay';
+  let total=0, units=0;
+  selectedCargoKeys(scope).forEach(k=>{
+    const qty=player.cargo[k]||0;
+    units+=qty;
+    total+=Math.round(qty*effectivePrice(k)*(relay?currentRelaySellMultiplier():1));
+  });
+  const btn=document.getElementById(scope==='relay'?'relay-sell-selected-btn':'sell-selected-btn');
+  if(btn){
+    btn.disabled=units===0;
+    btn.textContent=units?`Sell Selected (${units}) — ${total.toLocaleString()} cr`:'Select Cargo to Sell';
+  }
+}
+function cargoSaleRow(k, scope, multiplier=1){
+  const qty=player.cargo[k], mat=MATERIALS[k];
+  const val=Math.round(qty*effectivePrice(k)*multiplier);
+  const reason=protectedCargoReason(k);
+  return `<div class="cargo-row ${reason?'quest-protected':''}">
+    <label class="sell-select">
+      <input type="checkbox" data-sell-scope="${scope}" data-mat="${k}" ${reason?'':'checked'} onchange="updateSelectedSaleTotal('${scope}')">
+      <span class="cargo-name"><span class="swatch" style="background:${mat.color}"></span>${mat.name} <span style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;">(${mat.symbol})</span>${reason?`<span class="quest-tag">PROTECTED</span>`:''}</span>
+    </label>
+    <span class="cargo-qty">×${qty}</span>
+    <span class="cargo-val mono">${val.toLocaleString()} cr</span>
+  </div>${reason?`<div style="font-size:10px;color:var(--amber);padding:3px 0 7px 25px;">${reason} — unchecked by default</div>`:''}`;
+}
+function renderSellTab(){
+  const el=document.getElementById('tab-sell');
+  const entries=MAT_KEYS.filter(k=>player.cargo[k]>0);
+  if(entries.length===0){ el.innerHTML='<div class="empty-note">Cargo hold is empty. Go mine some asteroids.</div>'; return; }
+  let rows=`<div class="upgrade-card" style="display:block;border-color:#f2a154;margin-bottom:12px"><div class="u-name">Current Market: ${currentMarket().name}</div><div class="u-desc">Civilian standing: ${civilianTier().name} · Ceres bonus ${Math.round((civilianTier().sell-1)*100)}%</div></div>`;
+  rows+=`<div class="sell-toolbar"><button onclick="setCargoSelection('station',true,false)">Select Regular Cargo</button><button onclick="setCargoSelection('station',false,true)">Clear Selection</button><button onclick="setCargoSelection('station',true,true)">Select Everything</button></div>`;
+  entries.forEach(k=>rows+=cargoSaleRow(k,'station',1));
+  el.innerHTML=rows+`<button id="sell-selected-btn" class="sell-btn" onclick="sellSelected('station')">Sell Selected</button>`;
+  updateSelectedSaleTotal('station');
 }
 function smeltAndRefresh(oreKey, amount){
-  if(smeltOre(oreKey, amount)){
-    renderManifest();
-    updateHUD();
-    saveGame();
-  }
+  if(smeltOre(oreKey, amount)){ renderManifest(); updateHUD(); saveGame(); }
 }
 function craftWaterAndRefresh(){
-  if(craftWater()){
-    renderManifest();
-    renderSellTab();
-    updateHUD();
-    saveGame();
-  }
+  if(craftWater()){ renderManifest(); renderSellTab(); updateHUD(); saveGame(); }
 }
-function sellAll(){
-  let total = 0, units = 0;
-  MAT_KEYS.forEach(k=>{
-    if(player.cargo[k]>0){ total += Math.round(player.cargo[k]*effectivePrice(k)); units += player.cargo[k]; player.cargo[k]=0; }
-  });
-  if(total>0){
-    player.credits += total;
-    grantXp(total*0.08);
-    toast(`Sold ${units} units for ${total.toLocaleString()} credits`);
-    sfxSell();
+function sellSelected(scope){
+  const keys=selectedCargoKeys(scope);
+  if(!keys.length){ toast('Select at least one cargo type to sell.','warn'); return; }
+  const protectedItems=keys.filter(k=>protectedCargoReason(k));
+  if(protectedItems.length){
+    const details=protectedItems.map(k=>`${MATERIALS[k].name}: ${protectedCargoReason(k)}`).join('\n');
+    if(!confirm(`WARNING: You selected protected cargo:\n\n${details}\n\nSell it anyway?`)) return;
   }
-  renderSellTab();
-  renderUpgradesTab();
-  updateHUD();
-  updateStationCredits();
-  saveGame();
+  const relay=scope==='relay', mult=relay?currentRelaySellMultiplier():1;
+  let total=0,units=0;
+  keys.forEach(k=>{ const qty=player.cargo[k]||0; total+=Math.round(qty*effectivePrice(k)*mult); units+=qty; player.cargo[k]=0; });
+  if(total>0){ player.credits+=total; grantXp(total*0.08); toast(`${relay?'Fenced':'Sold'} ${units} units for ${total.toLocaleString()} credits`); sfxSell(); }
+  if(relay){ renderOutpostSell(); updateOutpostCredits(); }
+  else { renderSellTab(); renderUpgradesTab(); updateStationCredits(); }
+  updateHUD(); saveGame();
 }
+function sellAll(){ sellSelected('station'); }
 
 const UPGRADES = [
   {key:'cargoLevel', name:'Cargo Expansion', desc:'Adds hold space for more ore per trip.',
@@ -3935,28 +4249,11 @@ function renderUpgradesTab(){
     el.appendChild(smelterCard);
   }
 
-  // Mule Bay — cargo hold for the Faction Escort, only useful once it's earned ore-collection at level 50
+  // Contract Vessel upgrades are purchased with FP from the Faction tab.
   if(escort){
-    const muleCard = document.createElement('div');
-    muleCard.className = 'upgrade-card';
-    if(escort.level < ESCORT_COLLECT_LEVEL){
-      muleCard.innerHTML = `<div class="upgrade-info">
-          <div class="u-name">Mule Bay <span style="color:var(--text-dim);font-size:11px;">Locked</span></div>
-          <div class="u-desc">Gives your Faction Escort its own cargo hold so it can haul ore alongside you. Requires the escort to reach Level ${ESCORT_COLLECT_LEVEL} first — currently Level ${escort.level}.</div>
-        </div>
-        <button class="upgrade-btn" disabled>Locked</button>`;
-    } else {
-      const lvl = player.escortCargoLevel;
-      const cost = Math.round(220*Math.pow(lvl+1,1.5));
-      const canAfford = player.credits >= cost;
-      muleCard.innerHTML = `<div class="upgrade-info">
-          <div class="u-name">Mule Bay <span style="color:var(--text-dim);font-size:11px;">Lv ${lvl}</span></div>
-          <div class="u-desc">Your escort automatically mines, collects ore, and hands it off to you whenever it's nearby.</div>
-          <div class="u-lvl">Capacity: ${escortCargoCapacity()} units</div>
-        </div>
-        <button class="upgrade-btn" ${canAfford?'':'disabled'} onclick="buyMuleBay()">${cost.toLocaleString()} cr</button>`;
-    }
-    el.appendChild(muleCard);
+    const vesselCard=document.createElement('div'); vesselCard.className='upgrade-card';
+    vesselCard.innerHTML=`<div class="upgrade-info"><div class="u-name">Contract Vessel Systems</div><div class="u-desc">This support ship is upgraded with Faction Points at milestone levels 25, 50, 75, 100, and 150. Use the Faction tab to install systems, and press T near the vessel to transfer cargo.</div><div class="u-lvl">Current vessel level: ${escort.level} · Certification Tier ${vesselCertification()}</div></div><button class="upgrade-btn" onclick="switchTab('faction')">Open Faction</button>`;
+    el.appendChild(vesselCard);
   }
 
   // Ram Scoop — unlocked by a frigate-kill milestone, collects gas from Nebula clouds
@@ -4055,19 +4352,8 @@ function buySmelter(){
   updateStationCredits();
   saveGame();
 }
-function buyMuleBay(){
-  if(!escort || escort.level < ESCORT_COLLECT_LEVEL) return;
-  const lvl = player.escortCargoLevel;
-  const cost = Math.round(220*Math.pow(lvl+1,1.5));
-  if(player.credits < cost) return;
-  player.credits -= cost;
-  player.escortCargoLevel++;
-  toast(`Mule Bay upgraded to level ${player.escortCargoLevel}`);
-  sfxClick();
-  renderUpgradesTab();
-  updateStationCredits();
-  saveGame();
-}
+function buyMuleBay(){ toast('Mule Bay upgrades moved to Contract Vessel Cargo Hold upgrades in the Faction tab.','warn'); }
+
 function buyRamScoop(){
   if(player.hasRamScoop) return;
   if(player.frigatesKilled < RAM_SCOOP_UNLOCK_FRIGATES) return;
@@ -4103,12 +4389,12 @@ function renderCrewTab(){
     const pct = Math.min(100, escort.xp/need*100);
     const escortUsed = Object.values(escort.cargo).reduce((s,v)=>s+v,0);
     html += `<div class="upgrade-card" style="flex-direction:column;align-items:stretch;margin-bottom:18px;">
-      <div class="u-name" style="margin-bottom:4px;">Faction Escort <span style="color:var(--cyan);font-size:11px;">Lv ${escort.level}</span></div>
+      <div class="u-name" style="margin-bottom:4px;">Contract Vessel <span style="color:var(--cyan);font-size:11px;">Lv ${escort.level}</span></div>
       <div class="barwrap" style="margin-bottom:4px;"><div class="bar" style="width:${pct}%;background:linear-gradient(90deg,#245b56,#4fe0d0);"></div></div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">${Math.floor(escort.xp)} / ${need} XP — gains XP alongside you automatically</div>
-      <div style="font-size:11px;color:${escort.level>=ESCORT_MINE_LEVEL?'var(--cyan)':'var(--text-dim)'};">${escort.level>=ESCORT_MINE_LEVEL?'✓':'○'} Mines nearby asteroids (Lv ${ESCORT_MINE_LEVEL})</div>
-      <div style="font-size:11px;color:${escort.level>=ESCORT_COLLECT_LEVEL?'var(--cyan)':'var(--text-dim)'};">${escort.level>=ESCORT_COLLECT_LEVEL?'✓':'○'} Collects ore, needs a Mule Bay (Lv ${ESCORT_COLLECT_LEVEL})</div>
-      ${escortCargoCapacity()>0?`<div style="font-size:11px;color:var(--amber);margin-top:6px;">Mule Bay cargo: ${escortUsed} / ${escortCargoCapacity()}</div>`:''}
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">${escort.level>=ESCORT_MAX_LEVEL?'Maximum vessel level reached':`${Math.floor(escort.xp)} / ${need} XP`} — Certification Tier ${vesselCertification()}</div>
+      <div style="font-size:11px;color:${escort.level>=ESCORT_MINE_LEVEL?'var(--cyan)':'var(--text-dim)'};">${escort.level>=ESCORT_MINE_LEVEL?'✓':'○'} Autonomous mining and Tier I upgrades (Lv ${ESCORT_MINE_LEVEL})</div>
+      <div style="font-size:11px;color:${escort.level>=ESCORT_COLLECT_LEVEL?'var(--cyan)':'var(--text-dim)'};">${escort.level>=ESCORT_COLLECT_LEVEL?'✓':'○'} Autonomous ore collection and Tier II upgrades (Lv ${ESCORT_COLLECT_LEVEL})</div>
+      ${escortCargoCapacity()>0?`<div style="font-size:11px;color:var(--amber);margin-top:6px;">Contract cargo: ${escortUsed} / ${escortCargoCapacity()} · Gas: ${Object.values(escort.gas||{}).reduce((a,b)=>a+b,0)} / ${escortGasCapacity()}</div>`:''}
     </div>`;
   }
   if(crew.length>0){
@@ -4164,7 +4450,7 @@ function hireCrew(){
   player.credits -= cost;
   const recruit={id:'crew'+Date.now().toString(36),name:hire.name, role:hire.role, level:1, xp:0,equipment:emptyEquipment()}; starterEquipment(recruit); crew.push(recruit);
   window._pendingHire = null;
-  toast(`${hire.name} joined your crew as ${ROLES[hire.role].name}`);
+  toast(`${hire.name} joined as ${ROLES[hire.role].name} with only a Utility Knife. Find armor and ranged gear in hideouts.`);
   sfxLevelUp();
   renderCrewTab();
   renderUpgradesTab();
@@ -4220,14 +4506,14 @@ function renderFactionTab(){
     html += `<div class="upgrade-card" style="border-color:#f2a154;margin-top:12px;">
       <div class="upgrade-info">
         <div class="u-name" style="color:#ffb27a;">Frigate Bounty — Complete</div>
-        <div class="u-desc">Ram Scoop equipment is available at Ceres, and a new Stargate is active in the Deep Zone leading to the Nebula.</div>
+        <div class="u-desc">Your Contract Vessel has been awarded. Ram Scoop equipment is available at Ceres, and a new Stargate leads to the Nebula.</div>
       </div>
     </div>`;
   } else if(player.nebulaQuestAccepted){
     const pct = Math.min(100, player.frigatesKilled/RAM_SCOOP_UNLOCK_FRIGATES*100);
     html += `<div class="upgrade-card" style="flex-direction:column;align-items:stretch;border-color:#f2a154;margin-top:12px;">
       <div class="u-name" style="margin-bottom:8px;">Frigate Bounty <span style="color:var(--text-dim);font-size:11px;">In Progress</span></div>
-      <div class="u-desc" style="margin-bottom:10px;">Destroy Frigates in the Deep Zone to prove your ship worthy of ram-scoop hardware — and to draw a new Stargate out of hiding.</div>
+      <div class="u-desc" style="margin-bottom:10px;">Destroy Frigates in the Deep Zone to earn a Contract Vessel, unlock ram-scoop hardware, and draw a new Stargate out of hiding.</div>
       <div class="barwrap"><div class="bar" style="width:${pct}%;background:linear-gradient(90deg,#7a2030,#ff6a3d);"></div></div>
       <div style="font-size:12px;color:var(--amber);">${player.frigatesKilled} / ${RAM_SCOOP_UNLOCK_FRIGATES} Frigates destroyed</div>
       <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Tracked live in your HUD.</div>
@@ -4236,7 +4522,7 @@ function renderFactionTab(){
     html += `<div class="upgrade-card" style="margin-top:12px;">
       <div class="upgrade-info">
         <div class="u-name">Frigate Bounty</div>
-        <div class="u-desc">A standing contract to hunt Frigates in the Deep Zone. Accept it to unlock Ram Scoop hardware and a new Stargate at ${RAM_SCOOP_UNLOCK_FRIGATES} kills, tracked live in your HUD.</div>
+        <div class="u-desc">A standing contract to hunt Frigates in the Deep Zone. Accept it to earn a Contract Vessel plus Ram Scoop hardware and a new Stargate at ${RAM_SCOOP_UNLOCK_FRIGATES} kills, tracked live in your HUD.</div>
       </div>
       <button class="upgrade-btn" onclick="acceptNebulaQuest()">Accept Contract</button>
     </div>`;
@@ -4273,6 +4559,20 @@ function renderFactionTab(){
         onmousedown="startHoldRepeat(donateCredits)" ontouchstart="startHoldRepeat(donateCredits)">Donate 500 CR (+12 FP) — hold to repeat</button>
     </div>`;
 
+  if(escort){
+    const cert=vesselCertification(),vu=vesselUpgrades();
+    html+=`<div class="label-row" style="margin:18px 0 8px;">Contract Vessel Upgrades <span style="color:var(--amber);text-transform:none;">${player.factionPoints} FP available</span></div>`;
+    html+=`<div class="upgrade-card" style="display:block;border-color:#4fe0d0"><div class="u-name">Certification Tier ${cert} · Vessel Level ${escort.level}</div><div class="u-desc">Upgrade tiers unlock at levels 25, 50, 75, 100, and 150. Each system is purchased independently with FP; standard maximum is Tier V.</div><div class="vessel-systems">${Object.entries(VESSEL_SYSTEMS).map(([k,v])=>`<div class="vessel-system"><b>${v.name}</b><div style="color:var(--cyan);margin-top:3px">Tier ${vu[k]} / 5</div></div>`).join('')}</div></div>`;
+    Object.entries(VESSEL_SYSTEMS).forEach(([key,sys])=>{
+      const lvl=vu[key],next=lvl+1,req=VESSEL_TIER_LEVELS[next]||0,cost=VESSEL_UPGRADE_COSTS[next]||0;
+      const unlocked=next<=5&&cert>=next,afford=player.factionPoints>=cost;
+      const label=lvl>=5?'MAX':(!unlocked?`Lv ${req} Required`:`${cost} FP`);
+      html+=`<div class="upgrade-card"><div class="upgrade-info"><div class="u-name">${sys.name} <span style="color:var(--cyan);font-size:11px">Tier ${lvl}</span></div><div class="u-desc">${sys.desc}</div><div class="u-lvl">Next tier certification: Vessel Level ${req||'—'}</div></div><button class="upgrade-btn" ${(lvl>=5||!unlocked||!afford)?'disabled':''} onclick="buyVesselUpgrade('${key}')">${label}</button></div>`;
+    });
+  } else {
+    html+=`<div class="upgrade-card" style="display:block;margin-top:18px"><div class="u-name">Contract Vessel</div><div class="u-desc">Complete the Frigate Bounty contract to receive a second ship. It gains levels alongside you and unlocks FP upgrades at levels 25, 50, 75, 100, and 150.</div></div>`;
+  }
+
   html += `<div class="label-row" style="margin:18px 0 8px;">Faction Store</div>`;
   FACTION_PERKS.forEach(perk=>{
     const owned = player.factionPerks[perk.key];
@@ -4290,6 +4590,53 @@ function renderFactionTab(){
 
   el.innerHTML = html;
 }
+function buyVesselUpgrade(key){
+  if(!escort||!VESSEL_SYSTEMS[key]) return;
+  const vu=vesselUpgrades(),next=(vu[key]||0)+1;
+  if(next>5||vesselCertification()<next) return;
+  const cost=VESSEL_UPGRADE_COSTS[next];
+  if(player.factionPoints<cost) return;
+  player.factionPoints-=cost; vu[key]=next;
+  if(key==='hull') escort.hp=escortHullMax();
+  toast(`${VESSEL_SYSTEMS[key].name} upgraded to Tier ${next}!`,'levelup');
+  sfxLevelUp();renderFactionTab();renderCrewTab();updateHUD();saveGame();
+}
+function contractCargoUsed(){return escort?Object.values(escort.cargo||{}).reduce((a,b)=>a+b,0):0;}
+function contractGasUsed(){return escort?Object.values(escort.gas||{}).reduce((a,b)=>a+b,0):0;}
+function closeTransfer(){document.getElementById('transfer-overlay')?.classList.remove('open');}
+function toggleTransfer(){
+  const panel=document.getElementById('transfer-overlay'); if(!panel) return;
+  if(panel.classList.contains('open')){closeTransfer();return;}
+  if(!escort){toast('No Contract Vessel has been awarded yet. Complete the Frigate Bounty.','warn');return;}
+  if(Math.hypot(player.x-escort.x,player.y-escort.y)>ESCORT_TRANSFER_RANGE){toast('Move within 145 units of the Contract Vessel to transfer materials.','warn');return;}
+  renderTransfer();panel.classList.add('open');
+}
+function transferMaterial(kind,key,dir,amount){
+  if(!escort) return;
+  const from=dir==='toVessel'?(kind==='gas'?player.gasBuffer:player.cargo):(kind==='gas'?escort.gas:escort.cargo);
+  const to=dir==='toVessel'?(kind==='gas'?escort.gas:escort.cargo):(kind==='gas'?player.gasBuffer:player.cargo);
+  let qty=Math.floor(from[key]||0); if(qty<=0)return;
+  if(amount==='all') amount=qty; amount=Math.min(qty,Math.max(1,Number(amount)||1));
+  let capacity,used,weight=1;
+  if(dir==='toVessel'){capacity=kind==='gas'?escortGasCapacity():escortCargoCapacity();used=kind==='gas'?contractGasUsed():contractCargoUsed();}
+  else {capacity=kind==='gas'?gasTankCapacity():cargoCapacity();used=kind==='gas'?gasUsed():cargoUsed();weight=kind==='gas'?1:((MATERIALS[key]&&MATERIALS[key].cargoWeight)||1);}
+  const room=Math.max(0,Math.floor((capacity-used)/weight)); amount=Math.min(amount,room);
+  if(amount<=0){toast(`No room in the ${dir==='toVessel'?'Contract Vessel':'player ship'} ${kind==='gas'?'gas hold':'cargo hold'}.`,'warn');return;}
+  from[key]-=amount;if(from[key]<=0)delete from[key];to[key]=(to[key]||0)+amount;
+  renderTransfer();updateHUD();saveGame();
+}
+function renderTransfer(){
+  if(!escort)return; const rows=document.getElementById('transfer-rows'),summary=document.getElementById('transfer-summary');
+  summary.innerHTML=`<div class="upgrade-card" style="display:block;border-color:#4fe0d0"><div class="u-name">Contract Vessel · Level ${escort.level} · Tier ${vesselCertification()}</div><div class="u-desc">Player Cargo ${cargoUsed()}/${cargoCapacity()} · Contract Cargo ${contractCargoUsed()}/${escortCargoCapacity()} · Player Gas ${gasUsed()}/${gasTankCapacity()} · Contract Gas ${contractGasUsed()}/${escortGasCapacity()}</div></div>`;
+  const keys=[...new Set([...Object.keys(player.cargo||{}),...Object.keys(escort.cargo||{})])].filter(k=>(player.cargo[k]||escort.cargo[k]));
+  const gases=[...new Set([...Object.keys(player.gasBuffer||{}),...Object.keys(escort.gas||{})])].filter(k=>(player.gasBuffer[k]||escort.gas[k]));
+  let html='<div class="label-row">Solid Cargo</div>';
+  const makeRow=(kind,k)=>{const mat=MATERIALS[k]||{name:k};const left=kind==='gas'?(player.gasBuffer[k]||0):(player.cargo[k]||0),right=kind==='gas'?(escort.gas[k]||0):(escort.cargo[k]||0);return `<div class="transfer-grid"><div><b>${mat.name||k}</b><div class="u-lvl">Player: ${Math.floor(left)}</div></div><div class="transfer-actions"><button onclick="transferMaterial('${kind}','${k}','toVessel',1)">1 →</button><button onclick="transferMaterial('${kind}','${k}','toVessel',10)">10 →</button><button onclick="transferMaterial('${kind}','${k}','toVessel','all')">ALL →</button><button onclick="transferMaterial('${kind}','${k}','toPlayer',1)">← 1</button><button onclick="transferMaterial('${kind}','${k}','toPlayer',10)">← 10</button><button onclick="transferMaterial('${kind}','${k}','toPlayer','all')">← ALL</button></div><div style="text-align:right"><b>${mat.name||k}</b><div class="u-lvl">Contract: ${Math.floor(right)}</div></div></div>`};
+  html+=keys.length?keys.map(k=>makeRow('cargo',k)).join(''):'<div class="empty-note">No solid cargo aboard either ship.</div>';
+  html+='<div class="label-row" style="margin-top:18px">Gases</div>';
+  html+=gases.length?gases.map(k=>makeRow('gas',k)).join(''):'<div class="empty-note">No gases aboard either ship.</div>'; rows.innerHTML=html;
+}
+
 function donateGold(){
   const qty = player.cargo['gold']||0;
   if(qty<=0) return;
@@ -4332,6 +4679,7 @@ function buyFactionPerk(key){
   renderUpgradesTab();
   saveGame();
 }
+checkBackupAvailability();
 </script>
 
 </body>
